@@ -110,8 +110,8 @@
         <configuration>
           <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
           <autoVersionSubmodules>true</autoVersionSubmodules>
-          <scmCommentPrefix>HREPTWO-4790:</scmCommentPrefix>
-          <tag>hippo-repository-2.18.00RC1</tag>
+          <scmCommentPrefix>HREPTWO-4826:</scmCommentPrefix>
+          <tag>hippo-repository-2.18.00RC2</tag>
         </configuration>
       </plugin>
       <plugin>
