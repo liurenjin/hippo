@@ -24,7 +24,7 @@
   <name>Repository</name>
   <description>Hippo Repository</description>
   <artifactId>hippo-repository</artifactId>
-  <version>2.18.00-SNAPSHOT</version>
+  <version>2.18.00RC2</version>
   <packaging>pom</packaging>
 
   <repositories>
@@ -96,9 +96,9 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:http://svn.onehippo.org/repos/hippo/hippo-cms7/repository/branches/hippo-repository-2.18.xx</connection>
-    <developerConnection>scm:svn:https://svn.onehippo.org/repos/hippo/hippo-cms7/repository/branches/hippo-repository-2.18.xx</developerConnection>
-    <url>http://svn.onehippo.org/repos/hippo/hippo-cms7/repository/branches/hippo-repository-2.18.xx</url>
+    <connection>scm:svn:http://svn.onehippo.org/repos/hippo/hippo-cms7/repository/tags/hippo-repository-2.18.00RC2</connection>
+    <developerConnection>scm:svn:https://svn.onehippo.org/repos/hippo/hippo-cms7/repository/tags/hippo-repository-2.18.00RC2</developerConnection>
+    <url>http://svn.onehippo.org/repos/hippo/hippo-cms7/repository/tags/hippo-repository-2.18.00RC2</url>
   </scm>
 
   <build>
@@ -110,8 +110,8 @@
         <configuration>
           <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
           <autoVersionSubmodules>true</autoVersionSubmodules>
-          <scmCommentPrefix>HREPTWO-4790:</scmCommentPrefix>
-          <tag>hippo-repository-2.18.00RC1</tag>
+          <scmCommentPrefix>HREPTWO-4826:</scmCommentPrefix>
+          <tag>hippo-repository-2.18.00RC2</tag>
         </configuration>
       </plugin>
       <plugin>
