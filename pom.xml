@@ -61,6 +61,7 @@
     <module>jca</module>
     <module>servlets</module>
     <module>application</module>
+    <module>export</module>
   </modules>
 
   <properties>
@@ -93,6 +94,7 @@
     <jackrabbit.version>2.1.2</jackrabbit.version>
     <quartz.version>1.8.4</quartz.version>
     <json-lib.version>2.2.2</json-lib.version>
+    <dom4j.version>1.6.1</dom4j.version>
   </properties>
 
   <scm>
@@ -409,6 +411,11 @@
             <artifactId>geronimo-spec-jta</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+      	<groupId>dom4j</groupId>
+      	<artifactId>dom4j</artifactId>
+      	<version>${dom4j.version}</version>
       </dependency>
 
       <!-- Testing needs a JTA implementation -->
