@@ -82,6 +82,7 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
 
     @Override
     public NodeState populate(StateProviderContext context, NodeState state) throws RepositoryException {
+        long startTime = System.currentTimeMillis();
         NodeId nodeId = state.getNodeId();
 
         String[] property = getProperty(nodeId, docbaseName);
@@ -140,7 +141,7 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
             orderByList = new ArrayList<OrderBy>();
             if(sortorders != null && sortorders.length != sortbys.length) {
                 log.warn("When using multivalued '{}', and '{}', then both should have equal number of values (or delete property "+FacNavNodeType.HIPPOFACNAV_FACETSORTORDER+" at all)", FacNavNodeType.HIPPOFACNAV_FACETSORTBY, FacNavNodeType.HIPPOFACNAV_FACETSORTORDER);
-             // we always need to populate the count
+                // we always need to populate the count
                 populateCount(state, 0);
                 return state;
             }
@@ -176,7 +177,7 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
                 try {
                     ParsedFacet parsedFacet;
                     try {
-                        parsedFacet = new ParsedFacet(facetNodeView.facet, facetNodeView.displayName , this);
+                        parsedFacet = ParsedFacet.getInstance(facetNodeView.facet, facetNodeView.displayName , this);
                     } catch (Exception e) {
                         log.warn("Malformed facet range configuration '"+facetNodeView.facet+"'. Valid format is "+VALID_RANGE_EXAMPLE,
                                         e);
@@ -208,7 +209,7 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
             }
         } catch (IllegalArgumentException e) {
             log.warn("Incorrect faceted navigation configuration: '{}'. Return state", e.getMessage());
-           // we always need to populate the count
+            // we always need to populate the count
             populateCount(state, 0);
             return state;
         }
@@ -255,7 +256,7 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
          
         } catch (IllegalArgumentException e) {
             log.warn("Cannot get the faceted result: '"+e.getMessage()+"'");
-           // we always need to populate the count
+            // we always need to populate the count
             populateCount(state, 0);
             return state;
         }
