@@ -177,7 +177,7 @@ final class Extension {
     NamespaceInstruction createNamespaceInstruction(String uri, String prefix) throws IOException {
         int indexOfUnderscore = prefix.indexOf('_');
         prefix = (indexOfUnderscore == -1) ? prefix : prefix.substring(0, indexOfUnderscore);
-        return new NamespaceInstructionImpl(prefix, 3000.0, uri, null);
+        return new NamespaceInstructionImpl(prefix, 30000.0, uri, null);
     }
 
     private ContentResourceInstruction createContentResourceInstruction(String path, boolean isNode) {
@@ -198,7 +198,15 @@ final class Extension {
         if (root.equals(""))
             root = "/";
 
-        return new ContentResourceInstruction(name, 3000.3, file.getParentFile(), fileForPath, root, contextNode, true, this);
+        double sequence = 30000.3;
+        // find the parent content resource instruction to determine the sequence number
+        ContentResourceInstruction parent = findContentResourceInstruction(root, true);
+        if (parent != null) {
+            sequence = parent.sequence + 1;
+        }
+        
+        return new ContentResourceInstruction(name, sequence, file.getParentFile(), fileForPath, root, contextNode, true, this);
+
     }
 
     private NodetypesResourceInstruction createNodetypesResourceInstruction(String path) {
@@ -214,7 +222,7 @@ final class Extension {
         String nodetypesresource = "namespaces/" + name + ".cnd";
         // ALERT: we use a convention for the node name of a node types resource instruction
         // It is the node type prefix + -nodetypes
-        return new NodetypesResourceInstruction(name + "-nodetypes", 3000.1, file.getParentFile(), nodetypesresource, null, null, prefix);
+        return new NodetypesResourceInstruction(name + "-nodetypes", 30000.1, file.getParentFile(), nodetypesresource, null, null, prefix);
     }
 
     void addInstruction(Instruction instruction) {
