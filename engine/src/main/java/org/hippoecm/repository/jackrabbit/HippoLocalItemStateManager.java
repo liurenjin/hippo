@@ -628,8 +628,6 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
                         ((NodeState)state).removeAllChildNodeEntries();
                         if(changedParents.contains(state.getId())) {
                             modifiedExternals.add(state.getId());
-                        } else if(!(state.hasOverlayedState() && state.getOverlayedState().getParentId().equals(state.getParentId()))) {
-                            modifiedExternals.add(state.getId());
                         }
                         //store(state);
                     }
