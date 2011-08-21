@@ -201,7 +201,7 @@ final class Extension {
         double sequence = 30000.3;
         // find the parent content resource instruction to determine the sequence number
         ContentResourceInstruction parent = findContentResourceInstruction(root, true);
-        if (parent != null) {
+        if (parent != null && parent.sequence >= 30000.3) {
             sequence = parent.sequence + 1;
         }
         
