@@ -29,6 +29,14 @@
 
   <repositories>
     <repository>
+      <id>hippo-maven2-snapshots</id>
+      <name>Hippo Maven 2</name>
+      <url>http://maven.onehippo.com/maven2-snapshots/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
       <id>hippo</id>
       <name>Hippo Maven 2</name>
       <url>http://maven.onehippo.com/maven2/</url>
@@ -38,11 +46,34 @@
       <releases>
         <updatePolicy>never</updatePolicy>
       </releases>
+    </repository>
+    <repository>
+      <id>jpox</id>
+      <name>JPOX maven repository.</name>
+      <url>http://maven.onehippo.com/maven2/</url>
       <layout>default</layout>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </repository>
   </repositories>
 
   <pluginRepositories>
+    <pluginRepository>
+      <id>jpox.plugin</id>
+      <name>JPOX maven 2 plugin repository.</name>
+      <url>http://maven.onehippo.com/maven2/</url>
+      <layout>default</layout>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </pluginRepository>
     <pluginRepository>
       <id>hippo</id>
       <name>Hippo Maven 2</name>
@@ -53,7 +84,6 @@
       <releases>
         <updatePolicy>never</updatePolicy>
       </releases>
-      <layout>default</layout>
     </pluginRepository>
   </pluginRepositories>
 
