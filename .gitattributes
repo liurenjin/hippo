@@ -206,7 +206,6 @@ export/src/main/java/org/hippoecm/repository/export/NamespaceInstructionImpl.jav
 export/src/main/java/org/hippoecm/repository/export/NodetypesResourceInstruction.java -text
 export/src/main/java/org/hippoecm/repository/export/ResourceInstruction.java -text
 export/src/test/java/org/hippoecm/repository/export/LocationMapperTest.java -text
-/jackrabbit.patch -text
 jca/pom.xml svneol=native#text/plain
 jca/src/main/rar/META-INF/ra.xml svneol=native#text/plain
 jca/src/main/rar/repository.xml svneol=native#text/plain
