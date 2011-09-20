@@ -776,7 +776,7 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
         if(!target.isNodeType(HippoNodeType.NT_DOCUMENT)) {
             throw new MappingException("copied destination is not a document");
         }
-        return copyFrom(new Document(source.getUUID()), new Document(target.getUUID()), absPath.substring(absPath.lastIndexOf("/"+1)), arguments);
+        return copyFrom(new Document(source.getUUID()), new Document(target.getUUID()), absPath.substring(absPath.lastIndexOf("/")+1), arguments);
     }
     public Document copy(Document offspring, Document targetFolder, String targetName, Map<String,String> arguments)
         throws WorkflowException, MappingException, RepositoryException, RemoteException {
@@ -801,7 +801,7 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
         if(!target.isNodeType(HippoNodeType.NT_DOCUMENT)) {
             throw new MappingException("copied destination is not a document");
         }
-        return moveFrom(new Document(source.getUUID()), new Document(target.getUUID()), absPath.substring(absPath.lastIndexOf("/"+1)), arguments);
+        return moveFrom(new Document(source.getUUID()), new Document(target.getUUID()), absPath.substring(absPath.lastIndexOf("/")+1), arguments);
     }
     public Document move(Document offspring, Document targetFolder, String targetName, Map<String,String> arguments)
         throws WorkflowException, MappingException, RepositoryException, RemoteException {
