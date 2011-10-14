@@ -629,10 +629,23 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                 continue;
             if (prop.getDefinition().isMultiple()) {
                 boolean isProtected = true;
-                for(int i=0; i<nodeTypes.length; i++) {
-                    if(nodeTypes[i].canSetProperty(prop.getName(), prop.getValues())) {
+                for (int i = 0; i < nodeTypes.length; i++) {
+                    PropertyDefinition matchingDefinition = null;
+                    for (PropertyDefinition def : nodeTypes[i].getPropertyDefinitions()) {
+                        if (def.getRequiredType() == PropertyType.UNDEFINED || def.getRequiredType() == prop.getType()) {
+                            if (def.getName().equals("*")) {
+                                if (!def.isProtected()) {
+                                    matchingDefinition = def;
+                                }
+                                // now continue because there may be a more limiting definition
+                            } else if (def.getName().equals("*")) {
+                                matchingDefinition = def;
+                                break;
+                            }
+                        }
+                    }
+                    if (matchingDefinition != null && matchingDefinition.isProtected()) {
                         isProtected = false;
-                        break;
                     }
                 }
                 for(int i=0; i<nodeTypes.length; i++) {
@@ -644,7 +657,7 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                 }
                 if (!isProtected) {
                     if(renames.containsKey(path+"/"+prop.getName()) && renames.get(path+"/"+prop.getName()) != null) {
-                        target.setProperty(prop.getName(), expand(renames.get(path+"/"+prop.getName()), source, prop.getDefinition().getRequiredType()));
+                        target.setProperty(prop.getName(), expand(renames.get(path+"/"+prop.getName()), source, prop.getDefinition().getRequiredType()), prop.getType());
                     } else {
                         Value[] values = prop.getValues();
                         List<Value> newValues = new LinkedList<Value>();
@@ -658,7 +671,7 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                                 newValues.add(values[i]);
                             }
                         }
-                        target.setProperty(prop.getName(), newValues.toArray(new Value[newValues.size()]));
+                        target.setProperty(prop.getName(), newValues.toArray(new Value[newValues.size()]), prop.getType());
                     }
                 }
             } else {
