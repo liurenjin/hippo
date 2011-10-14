@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -236,6 +237,8 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                 String key = newValue.substring(1);
                 if (arguments.containsKey(key)) {
                     newValue = arguments.get(key);
+                } else {
+                    newValue = null;
                 }
             }
             if (renames.containsKey(values[i])) {
@@ -245,7 +248,11 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                 newValues[oldValues.length] = newValue;
                 renames.put(values[i], newValues);
             } else {
-                renames.put(values[i], new String[] { newValue });
+                if (newValue == null) {
+                    renames.put(values[i], null);
+                } else {
+                    renames.put(values[i], new String[] { newValue });
+                }
             }
         }
     }
@@ -538,7 +545,6 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
 
     static Node copy(Node source, Node target, Map<String, String[]> renames, String path) throws RepositoryException {
         String[] renamed;
-        Value[] values;
         String name = source.getName();
         if (renames.containsKey(path+"/_name")) {
             renamed = renames.get(path+"/_name");
@@ -584,7 +590,7 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
         }
 
         if (renames.containsKey(path+"/jcr:mixinTypes")) {
-            values = expand(renames.get(path+"/jcr:mixinTypes"), source, PropertyType.NAME);
+            Value[] values = expand(renames.get(path+"/jcr:mixinTypes"), source, PropertyType.NAME);
             for (int i = 0; i < values.length; i++) {
                 if (!target.isNodeType(values[i].getString())) {
                     target.addMixin(values[i].getString());
@@ -623,10 +629,23 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                 continue;
             if (prop.getDefinition().isMultiple()) {
                 boolean isProtected = true;
-                for(int i=0; i<nodeTypes.length; i++) {
-                    if(nodeTypes[i].canSetProperty(prop.getName(), prop.getValues())) {
+                for (int i = 0; i < nodeTypes.length; i++) {
+                    PropertyDefinition matchingDefinition = null;
+                    for (PropertyDefinition def : nodeTypes[i].getPropertyDefinitions()) {
+                        if (def.getRequiredType() == PropertyType.UNDEFINED || def.getRequiredType() == prop.getType()) {
+                            if (def.getName().equals("*")) {
+                                if (!def.isProtected()) {
+                                    matchingDefinition = def;
+                                }
+                                // now continue because there may be a more limiting definition
+                            } else if (def.getName().equals("*")) {
+                                matchingDefinition = def;
+                                break;
+                            }
+                        }
+                    }
+                    if (matchingDefinition != null && matchingDefinition.isProtected()) {
                         isProtected = false;
-                        break;
                     }
                 }
                 for(int i=0; i<nodeTypes.length; i++) {
@@ -638,9 +657,21 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                 }
                 if (!isProtected) {
                     if(renames.containsKey(path+"/"+prop.getName()) && renames.get(path+"/"+prop.getName()) != null) {
-                        target.setProperty(prop.getName(), expand(renames.get(path+"/"+prop.getName()), source, prop.getDefinition().getRequiredType()));
+                        target.setProperty(prop.getName(), expand(renames.get(path+"/"+prop.getName()), source, prop.getDefinition().getRequiredType()), prop.getType());
                     } else {
-                        target.setProperty(prop.getName(), prop.getValues());
+                        Value[] values = prop.getValues();
+                        List<Value> newValues = new LinkedList<Value>();
+                        for (int i = 0; i < values.length; i++) {
+                            String key = path+"/"+prop.getName()+"["+i+"]";
+                            if (renames.containsKey(key)) {
+                                for (Value substitute : expand(renames.get(key), source, prop.getDefinition().getRequiredType())) {
+                                    newValues.add(substitute);
+                                }
+                            } else {
+                                newValues.add(values[i]);
+                            }
+                        }
+                        target.setProperty(prop.getName(), newValues.toArray(new Value[newValues.size()]), prop.getType());
                     }
                 }
             } else {

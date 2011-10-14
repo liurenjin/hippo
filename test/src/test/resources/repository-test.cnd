@@ -76,3 +76,7 @@
 [hippo:autocreatedchild] > hippo:document
 + hippo:child (nt:unstructured) = nt:unstructured autocreated mandatory
 - * (string)
+
+[hippo:testrelaxed]
+- * (double) multiple
+- * (string) multiple
