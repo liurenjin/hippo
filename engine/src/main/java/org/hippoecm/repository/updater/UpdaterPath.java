@@ -30,6 +30,26 @@ public class UpdaterPath implements Comparable<UpdaterPath> {
         this(elements, elements.length+1);
     }
 
+    public UpdaterPath(String[] pathNames, Integer[] pathIndices, int endIndex) {
+        StringBuffer sb = new StringBuffer();
+        names = new String[endIndex+1];
+        indices = new Integer[endIndex+1];
+        for (int i = 0; i <= endIndex; i++) {
+            if (i > 0) {
+                sb.append("/");
+            }
+            sb.append(pathNames[i]);
+            if (pathIndices[i] > 1) {
+                sb.append("[");
+                sb.append(pathIndices[i]);
+                sb.append("]");
+            }
+            names[i] = pathNames[i];
+            indices[i] = pathIndices[i];
+        }
+        this.string = new String(sb);
+    }
+
     public UpdaterPath(String[] elements, int endIndex) {
         StringBuffer sb = new StringBuffer();
         names = new String[endIndex+1];
@@ -67,6 +87,26 @@ public class UpdaterPath implements Comparable<UpdaterPath> {
                 indices[i] = 0;
             }
         }
+    }
+
+    public UpdaterPath documentVariantPath() {
+        for(int i=0; i<names.length-1; i++) {
+            if(names[i].equals(names[i+1])) {
+                return new UpdaterPath(names, indices, i+1);
+            }
+        }
+        return null;
+    }
+
+    public boolean isDescendentOrSelf(UpdaterPath ancestor) {
+        if(ancestor.names.length > names.length)
+            return false;
+        for(int i=0; i<ancestor.names.length; i++) {
+            if(!ancestor.names[i].equals(names[i]) || ancestor.indices[i] != indices[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public int compareTo(UpdaterPath that) {
