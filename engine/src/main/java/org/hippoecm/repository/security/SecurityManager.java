@@ -717,6 +717,7 @@ public class SecurityManager implements JackrabbitSecurityManager {
             // of the first non-group principal.
             for (Iterator it = subject.getPrincipals().iterator(); it.hasNext();) {
                 Principal p = (Principal) it.next();
+                // FIXME: dead code
             }
         }
         return uid;
