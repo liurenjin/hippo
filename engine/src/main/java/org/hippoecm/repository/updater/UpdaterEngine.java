@@ -886,9 +886,15 @@ public class UpdaterEngine {
         for(SortedMap<UpdaterPath, List<UpdaterItemVisitor>> batch : partitionedBatch) {
             Set<UpdaterPath> documentBatch = new HashSet<UpdaterPath>();
             for(UpdaterPath path : batch.keySet()) {
-                UpdaterPath base = path.documentVariantPath();
-                if(base != null)
+                UpdaterPath base, root = (path.ancestors().hasNext() ? path.ancestors().next() : null);
+                if(root != null && (root.toString().equals("/hippo:configuration") || path.toString().equals("/hst:hst"))) {
+                    base = root;
+                } else {
+                    base = path.documentVariantPath();
+                }
+                if(base != null) {
                     documentBatch.add(base);
+                }
             }
             documentBatches.add(documentBatch);
         }

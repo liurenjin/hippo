@@ -15,6 +15,9 @@
  */
 package org.hippoecm.repository.updater;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 /**
  * Path used during upgrade.  Assures that items are processed in the correct order.
  */
@@ -96,6 +99,25 @@ public class UpdaterPath implements Comparable<UpdaterPath> {
             }
         }
         return null;
+    }
+
+    public Iterator<UpdaterPath> ancestors() {
+        return new Iterator() {
+            int idx = 1;
+            public boolean hasNext() {
+                return idx < names.length-1;
+            }
+            public UpdaterPath next() {
+                if (hasNext()) {
+                    return new UpdaterPath(names, indices, idx++);
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     public boolean isDescendentOrSelf(UpdaterPath ancestor) {
