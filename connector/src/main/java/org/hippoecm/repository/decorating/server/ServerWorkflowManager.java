@@ -70,6 +70,12 @@ public class ServerWorkflowManager extends ServerObject implements RemoteWorkflo
             factory.export(workflow);
             return workflow;
         } catch (RepositoryException ex) {
+            System.err.println(ex.getClass().getName()+": "+ex.getMessage());
+            ex.printStackTrace(System.err);
+            if(ex.getCause() != null) {
+            System.err.println("CAUSE: "+ex.getCause().getClass().getName()+": "+ex.getCause().getMessage());
+            ex.getCause().printStackTrace(System.err);
+            }
             throw getRepositoryException(ex);
         }
     }
@@ -90,6 +96,14 @@ public class ServerWorkflowManager extends ServerObject implements RemoteWorkflo
             Workflow workflow = workflowManager.getWorkflow(serverDescriptor.descriptor);
             factory.export(workflow);
             return workflow;
+        } catch (RepositoryException ex) {
+            throw getRepositoryException(ex);
+        }
+    }
+
+    public WorkflowManager getContextWorkflowManager(Object specification) throws RepositoryException, RemoteException {
+        try {
+            return workflowManager.getContextWorkflowManager(specification);
         } catch (RepositoryException ex) {
             throw getRepositoryException(ex);
         }
