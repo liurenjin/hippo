@@ -109,8 +109,8 @@ public class DocumentManagerImpl implements DocumentManager {
                 Thread.currentThread().setContextClassLoader(loader);
             }
             obj = pm.getObjectById(new JCROID(uuid, classname));
-        } catch(Exception e) {
-            e.printStackTrace();
+        } catch(Exception ex) {
+            log.error(ex.getClass().getName()+": "+ex.getMessage(), ex);
         } finally {
             sm.setTypes(null);
             if (loader != null) {

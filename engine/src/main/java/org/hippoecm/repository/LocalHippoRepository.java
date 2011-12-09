@@ -627,7 +627,6 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                     } catch (RepositoryException e) {
                         if (!e.getMessage().equals("not yet implemented")) {
                             log.warn(e.getMessage() + ". In " + cndName + " error for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), e);
-                            e.printStackTrace();
                         }
                     }
                 } else {
@@ -636,7 +635,6 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             } catch (RepositoryException ex) {
                 if (!ex.getMessage().equals("not yet implemented")) {
                     log.warn(ex.getMessage()+". In " + cndName +" error for "+  ntd.getName().getNamespaceURI() +":"+ntd.getName().getLocalName(), ex);
-                    ex.printStackTrace();
                 }
             }
         }

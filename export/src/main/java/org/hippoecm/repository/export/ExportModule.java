@@ -352,7 +352,7 @@ public final class ExportModule implements DaemonModule {
                 } catch (RepositoryException ex) {
                     log.error("Failed to process repository event.", ex);
                 } catch (Throwable t) {
-                	t.printStackTrace();
+                    log.error(t.getClass().getName()+": "+t.getMessage(), t);
                 }
             }
             
@@ -459,7 +459,7 @@ public final class ExportModule implements DaemonModule {
 				try {
 					return e1.getPath().length() - e2.getPath().length();
 				} catch (RepositoryException e) {
-					e.printStackTrace();
+					log.error(e.getClass().getName()+": "+e.getMessage(), e);
 				}
 				return 0;
 			}
