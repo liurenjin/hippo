@@ -197,11 +197,9 @@ public class LoadInitializationModule extends Thread implements DaemonModule, Ev
             initializeFolder.remove();
             session.save();
         } catch (IOException ex) {
-            System.err.println(ex.getClass().getName()+": "+ex.getMessage());
-            ex.printStackTrace(System.err);
+            log.error(ex.getClass().getName()+": "+ex.getMessage(), ex);
         } catch (RepositoryException ex) {
-            System.err.println(ex.getClass().getName()+": "+ex.getMessage());
-            ex.printStackTrace(System.err);
+            log.error(ex.getClass().getName()+": "+ex.getMessage(), ex);
         }
     }
 
@@ -726,7 +724,6 @@ public class LoadInitializationModule extends Thread implements DaemonModule, Ev
                     } catch (RepositoryException e) {
                         if (!e.getMessage().equals("not yet implemented")) {
                             log.warn(e.getMessage() + ". In " + cndName + " error for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), e);
-                            e.printStackTrace();
                         }
                     }
                 } else {
@@ -735,7 +732,6 @@ public class LoadInitializationModule extends Thread implements DaemonModule, Ev
             } catch (RepositoryException ex) {
                 if (!ex.getMessage().equals("not yet implemented")) {
                     log.warn(ex.getMessage()+". In " + cndName +" error for "+  ntd.getName().getNamespaceURI() +":"+ntd.getName().getLocalName(), ex);
-                    ex.printStackTrace();
                 }
             }
         }
