@@ -113,6 +113,7 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                 log.error("Error while removing listener: " + ex.getMessage(), ex);
             }
             try {
+                executor.shutdown();
                 executor.awaitTermination(3, TimeUnit.MINUTES);
             } catch(InterruptedException ex) {
                 // deliberate ignore, external timeout
