@@ -675,14 +675,6 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
         for (Iterator<QNodeTypeDefinition> iter = ntdList.iterator(); iter.hasNext();) {
             QNodeTypeDefinition ntd = iter.next();
 
-            try {
-                ntreg.unregisterNodeType(ntd.getName());
-            } catch (NoSuchNodeTypeException ex) {
-                // new type, ignore
-            } catch (RepositoryException ex) {
-                // kind of safe to ignore
-            }
-
             EffectiveNodeType effnt = null;
             try {
                 effnt = ntreg.registerNodeType(ntd);
