@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.jcr.InvalidItemStateException;
 import javax.jcr.NamespaceException;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -61,6 +62,8 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
     Name facetSortBy;
     Name facetSortOrder;
     Name facetFilters;
+    Name skipResultSetFacedNavigationRoot;
+    Name skipResultSetFacetsAvailableName;
     
     @Override
     protected void initialize() throws RepositoryException {
@@ -75,6 +78,8 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
         facetSortOrder = resolveName(FacNavNodeType.HIPPOFACNAV_FACETSORTORDER);
         
         facetFilters = resolveName(FacNavNodeType.HIPPOFACNAV_FILTERS);
+        skipResultSetFacedNavigationRoot = resolveName(FacNavNodeType.HIPPOFACNAV_SKIP_RESULTSET_FOR_FACET_NAVIGATION_ROOT);
+        skipResultSetFacetsAvailableName = resolveName(FacNavNodeType.HIPPOFACNAV_SKIP_RESULTSET_FOR_FACETS_AVAILABLE);
         
         virtualNodeName = resolveName(FacNavNodeType.NT_FACETSAVAILABLENAVIGATION);
         register(resolveName(FacNavNodeType.NT_FACETNAVIGATION), virtualNodeName);
@@ -104,6 +109,13 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
         String[] sortorders = getProperty(nodeId, facetSortOrder);
         
         String[] filters = getProperty(nodeId, facetFilters);
+        
+        // check whether to skip resultset for root faceted navigation node
+        boolean skipResultSetForFacetNavigationRoot = getPropertyAsBoolean(nodeId, skipResultSetFacedNavigationRoot);
+                
+        // check whether to skip resultset for facets available nodes
+        boolean skipResultSetForFacetsAvailable = getPropertyAsBoolean(nodeId, skipResultSetFacetsAvailableName);
+        
         
         // temporary: we do not want draft results, hence we by default configure to not show them. This should be improved
         try {
@@ -194,6 +206,7 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
                     childNodeId.facetNodeViews = newFacetNodeViews;
                     childNodeId.currentFacetNodeView = facetNodeView;
                     childNodeId.docbase = docbase;
+                    childNodeId.skipResultSetForFacetsAvailable = skipResultSetForFacetsAvailable;
                     if(limit > -1) {
                         childNodeId.limit = limit;
                     }
@@ -276,7 +289,17 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
         
         return state;
     }
-
+    
+    /*
+     * returns the value of the property is 'true' or boolean true
+     * When property is missing, false is returned
+     */
+    private boolean getPropertyAsBoolean(NodeId nodeId, Name propName) throws InvalidItemStateException, RepositoryException {
+        String[] skips = getProperty(nodeId, propName);
+        String skip = (skips != null && skips.length > 0 ? skips[0] : "false");
+        return Boolean.parseBoolean(skip);
+    }
+    
     private void populateCount(NodeState state, int count) throws RepositoryException {
         PropertyState propState = createNew(countName, state.getNodeId());
         propState.setType(PropertyType.LONG);
