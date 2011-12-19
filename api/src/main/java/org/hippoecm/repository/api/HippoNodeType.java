@@ -388,6 +388,11 @@ public interface HippoNodeType {
      * 
      */
     final public static String HIPPO_FACET = "hipposys:facet";
+    public static final String HIPPO_EXTENSIONBUILD = "hipposys:extensionbuild";
+    public static final String HIPPO_RELOADONSTARTUP = "hippo:reloadonstartup";
+    /**
+     *
+     */
     /**
      * 
      */
