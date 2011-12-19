@@ -30,7 +30,8 @@ abstract class AbstractInstruction implements Instruction {
     @SuppressWarnings("unused")
     private final static String SVN_ID = "$Id: ";
 
-    static final Logger log = LoggerFactory.getLogger("org.hippoecm.repository.export");
+    protected static final Logger log = LoggerFactory.getLogger("org.hippoecm.repository.export");
+    
     final String name;
     final Double sequence;
 
@@ -41,6 +42,10 @@ abstract class AbstractInstruction implements Instruction {
 
     public String getName() {
         return name;
+    }
+    
+    public Double getSequence() {
+        return sequence;
     }
 
     Element createBaseInstructionElement() {

@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +38,7 @@ import javax.jcr.observation.EventListener;
 import javax.jcr.observation.ObservationManager;
 
 import org.dom4j.DocumentException;
+import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.ext.DaemonModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +60,8 @@ public final class ExportModule implements DaemonModule {
     // ---------- Static variables
     private static final Logger log = LoggerFactory.getLogger("org.hippoecm.repository.export");
     private static final String CONFIG_NODE_PATH = "/hippo:configuration/hippo:modules/autoexport/hippo:moduleconfig";
+    
     // ---------- Member variables
-    private Session session;
     // we keep the listener, the manager and the executor here as members
     // so we can shutdown properly
     private EventListener listener;
@@ -75,8 +75,6 @@ public final class ExportModule implements DaemonModule {
     // ---------- DaemonModule implementation
     @Override
     public void initialize(Session session) throws RepositoryException {
-
-        this.session = session;
 
         // read 'hippoecm.export.dir' system property
         String configDir = System.getProperty("hippoecm.export.dir");
@@ -93,20 +91,7 @@ public final class ExportModule implements DaemonModule {
             configDirectory.mkdirs();
         }
 
-        // set export location property in the repository
-        String path = null;
-        try {
-            path = configDirectory.getCanonicalPath();
-            Node node = session.getNode(CONFIG_NODE_PATH);
-            node.setProperty("hipposys:location", path);
-            session.save();
-        } catch (RepositoryException e) {
-            log.warn("Cannot set export location property: " + e.getMessage());
-        } catch (IOException e) {
-            log.warn("Cannot set export location property: " + e.getMessage());
-        }
-
-        log.info("Automatically exporting changes to directory " + path);
+        log.info("Automatically exporting changes to directory " + configDirectory.getPath());
 
         // create extension
         Extension extension = null;
@@ -151,15 +136,6 @@ public final class ExportModule implements DaemonModule {
         if (executor != null) {
             executor.shutdown();
         }
-        // remove location property
-        try {
-            session.getNode(CONFIG_NODE_PATH).getProperty("hipposys:location").remove();
-            session.save();
-        } catch (PathNotFoundException e) {
-            log.debug("No such item: " + CONFIG_NODE_PATH + "/hipposys:location");
-        } catch (RepositoryException e) {
-            log.error("Error removing location property from repository. ", e);
-        }
     }
 
     // ---------- Implementation
@@ -180,9 +156,16 @@ public final class ExportModule implements DaemonModule {
             ignored.add("/content/attic");
             ignored.add("/hst:hst/hst:configuration/hst:default");
             ignored.add("/hippo:configuration/hippo:modules/autoexport");
+            ignored.add("/hippo:configuration/hippo:modules/brokenlinks");
             ignored.add("/hippo:configuration/hippo:temporary");
             ignored.add("/hippo:configuration/hippo:initialize");
             ignored.add("/formdata");
+            ignored.add("/initialize");
+            ignored.add("/jcr:system/jcr:nodeTypes/hipposys:");
+            ignored.add("/jcr:system/jcr:nodeTypes/hippo:");
+            ignored.add("/jcr:system/jcr:nodeTypes/rep:");
+            ignored.add("/jcr:system/jcr:nodeTypes/hipposysedit:");
+            ignored.add("/jcr:system/jcr:nodeTypes/hippofacnav:");
         }
         private final Extension extension;
         private final Session session;
@@ -193,15 +176,24 @@ public final class ExportModule implements DaemonModule {
             public synchronized void run() {
                 processEvents();
                 events.clear();
+                try {
+                    session.save();
+                } catch (RepositoryException e) {
+                    log.error("RepositoryException while trying to save session", e);
+                }
             }
         };
         private final Set<Event> events = new HashSet<Event>(100);
+        private final EventPreProcessor eventPreProcessor;
         private ScheduledFuture<?> future;
+
 
         private ExportEventListener(Extension extension, Session session, ScheduledExecutorService executor) throws RepositoryException {
             this.extension = extension;
             this.session = session;
             this.executor = executor;
+            
+            this.eventPreProcessor = new EventPreProcessor(session);
 
             // cache the registered namespace uris so we can detect when any were added 
             String[] _uris = session.getWorkspace().getNamespaceRegistry().getURIs();
@@ -240,7 +232,7 @@ public final class ExportModule implements DaemonModule {
                     } catch (RepositoryException e) {
                         log.error("Error occurred getting path from event.", e);
                     }
-                    events.add(event);
+                    addEvent(event);
                 }
                 if (events.size() > 0) {
                     // Schedule events to be processed 2 seconds in the future.
@@ -254,21 +246,29 @@ public final class ExportModule implements DaemonModule {
             }
         }
 
+
+        private void addEvent(Event event) {
+            try {
+                events.add(new ExportEvent(event));
+            } catch (RepositoryException e) {
+                log.error("Unable to add event because unable to compute event path", e);
+            }
+        }
+
         private void processEvents() {
             long startTime = System.nanoTime();
 
-            // sort the events (see EventComparator)
-            List<Event> _events = new ArrayList<Event>(events);
-            Collections.sort(_events, new EventComparator());
+            // preprocess the events
+            List<Event> events = eventPreProcessor.preProcessEvents(this.events);
 
             // process the events
-            for (Event event : _events) {
+            for (Event event : events) {
                 try {
                     String path = event.getPath();
                     if (log.isDebugEnabled()) {
                         log.debug(eventString(event) + " on " + path);
                     }
-                    boolean isNode = EventComparator.isNodeEventType(event);
+                    boolean isNode = event.getType() == Event.NODE_ADDED || event.getType() == Event.NODE_REMOVED;
                     ResourceInstruction instruction = extension.findResourceInstruction(path, isNode);
                     if (instruction != null) {
                         if (log.isDebugEnabled()) {
@@ -286,6 +286,7 @@ public final class ExportModule implements DaemonModule {
                                         log.debug("Adding instruction " + instruction);
                                     }
                                     extension.addInstruction(instruction);
+                                    addInitializeItem(instruction);
                                 } else {
                                     log.warn("Unable to create instruction. This change will be lost");
                                 }
@@ -299,6 +300,14 @@ public final class ExportModule implements DaemonModule {
                                     }
                                     // the root node of this instruction was removed, remove the instruction
                                     extension.removeInstruction(instruction);
+                                    removeInitializeItem(instruction);
+                                }
+                                for (ContentResourceInstruction child : extension.findDescendentContentResourceInstructions(path)) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Removing additional nested instruction " + child);
+                                    }
+                                    extension.removeInstruction(child);
+                                    removeInitializeItem(child);
                                 }
                             } else {
                                 log.warn("Change not handled by export. "
@@ -363,6 +372,7 @@ public final class ExportModule implements DaemonModule {
                                 log.debug("Adding instruction " + instruction);
                             }
                             extension.addInstruction(instruction);
+                            addInitializeItem(instruction);
                         }
                         uris.add(uri);
                     }
@@ -382,6 +392,34 @@ public final class ExportModule implements DaemonModule {
                 log.debug("onEvent took " + TimeUnit.MILLISECONDS.convert(estimatedTime, TimeUnit.NANOSECONDS) + " ms.");
             }
 
+        }
+        
+        private void addInitializeItem(Instruction instruction) {
+            try {
+                if (log.isDebugEnabled()) {
+                    log.debug("adding initialize item " + instruction.getName());
+                }
+                Node parent = session.getNode("/hippo:configuration/hippo:initialize");
+                Node node = parent.addNode(instruction.getName());
+                node.setPrimaryType(HippoNodeType.NT_INITIALIZEITEM);
+                node.setProperty("hippo:sequence", instruction.getSequence());
+            }
+            catch (RepositoryException e) {
+                log.error("Failed to add initialize item: " + instruction.getName(), e);
+            }
+        }
+        
+        private void removeInitializeItem(Instruction instruction) {
+            try {
+                if (log.isDebugEnabled()) {
+                    log.debug("removing initialize item " + instruction.getName());
+                }
+                Node node = session.getNode("/hippo:configuration/hippo:initialize/" + instruction.getName());
+                node.remove();
+            }
+            catch (RepositoryException e) {
+                log.error("Failed to remove initialize item: " + instruction.getName(), e);
+            }
         }
 
         private boolean ignore(String path) {
@@ -420,41 +458,6 @@ public final class ExportModule implements DaemonModule {
                     return "Property removed";
             }
             return null;
-        }
-
-        /**
-         * Sorts Events according to the following rules:
-         * - Events on nodes are ordered before events on properties
-         * - Shorter paths are ordered before longer paths
-         */
-        private static class EventComparator implements Comparator<Event> {
-            @Override
-            public int compare(Event e1, Event e2) {
-                int compareType = compareType(e1, e2);
-                return compareType == 0 ? comparePath(e1, e2) : compareType;
-            }
-
-            private static int compareType(Event e1, Event e2) {
-                if (isNodeEventType(e1)) {
-                    return isNodeEventType(e2) ? 0 : -1;
-                } else {
-                    return isNodeEventType(e2) ? 1 : 0;
-                }
-            }
-
-            private static int comparePath(Event e1, Event e2) {
-                try {
-                    return e1.getPath().length() - e2.getPath().length();
-                } catch (RepositoryException e) {
-                    log.error(e.getClass().getName()+": "+e.getMessage(), e);
-                }
-                return 0;
-            }
-
-            private static boolean isNodeEventType(Event event) {
-                return event.getType() == Event.NODE_ADDED
-                        || event.getType() == Event.NODE_REMOVED;
-            }
         }
     }
 }
