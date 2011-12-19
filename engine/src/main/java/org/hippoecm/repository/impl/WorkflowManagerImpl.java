@@ -355,10 +355,13 @@ public class WorkflowManagerImpl implements WorkflowManager {
                     } else {
                         objectPersist = true;
                         Object object = documentManager.getObject(uuid, classname, types);
-                        workflow = (Workflow)object;
-                        if (workflow instanceof WorkflowImpl) {
-                            ((WorkflowImpl)workflow).setWorkflowContext(new WorkflowContextNodeImpl(workflowNode, getSession(), item));
+                        if (object == null) {
+                            return null;
                         }
+                        workflow = (Workflow)object;
+                    }
+                    if (workflow instanceof WorkflowImpl) {
+                        ((WorkflowImpl)workflow).setWorkflowContext(new WorkflowContextNodeImpl(workflowNode, getSession(), item));
                     }
                     try {
                         Class[] interfaces = workflow.getClass().getInterfaces();
@@ -738,6 +741,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
             methodName = null;
             parameterTypes = null;
         }
+
         WorkflowInvocationImpl(WorkflowManager workflowManager, Node workflowNode, Session rootSession, Document workflowSubject, Method method, Object[] args) throws RepositoryException {
             this.workflowManager = workflowManager;
             this.workflowNode = workflowNode;
@@ -748,7 +752,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
             try {
                 String uuid = workflowSubject.getIdentity();
                 if(uuid != null && !"".equals(uuid)) {
-                    this.workflowSubjectNode = workflowNode.getSession().getNodeByUUID(uuid);
+                    this.workflowSubjectNode = rootSession.getNodeByIdentifier(uuid);
                 }
             } catch(ItemNotFoundException ex) {
             }
@@ -763,7 +767,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
             this.workflowSubject = null;
             this.method = method;
             this.arguments = (args!=null ? args.clone() : args);
-            this.workflowSubjectNode = workflowSubject;
+            this.workflowSubjectNode = rootSession.getNodeByIdentifier(workflowSubject.getIdentifier());
             this.category = workflowNode.getParent().getName();
             this.methodName = method.getName();
             this.parameterTypes = method.getParameterTypes();
@@ -900,9 +904,9 @@ public class WorkflowManagerImpl implements WorkflowManager {
                         objectPersist = true;
                         Object object = manager.documentManager.getObject(uuid, classname, types);
                         workflow = (Workflow)object;
-                        if (workflow instanceof WorkflowImpl) {
-                            ((WorkflowImpl)workflow).setWorkflowContext(manager.new WorkflowContextNodeImpl(workflowNode, item.getSession(), item));
-                        }
+                    }
+                    if (workflow instanceof WorkflowImpl) {
+                       ((WorkflowImpl)workflow).setWorkflowContext(manager.new WorkflowContextNodeImpl(workflowNode, item.getSession(), item));
                     }
                 } catch (IllegalAccessException ex) {
                     log.debug("no access to standards plugin", ex);
