@@ -134,19 +134,6 @@ public class DereferencedImportHandler extends ImportHandler {
     public void startPrefixMapping(String prefix, String uri)
             throws SAXException {
         localNamespaceMappings.put(prefix, uri);
-        try {
-            // Register the namespace unless already registered
-            String existingURI = null;
-            try {
-                existingURI = nsReg.getURI(prefix);
-            } catch(NamespaceException ex) {
-                nsReg.registerNamespace(prefix, uri);
-            }
-            if(existingURI != null && !existingURI.equals(uri))
-                throw new NamespaceException("prefix[" + prefix + "] already mapped to URI " + existingURI);
-        } catch (RepositoryException re) {
-            throw new SAXException(re);
-        }
     }
 
     /**
