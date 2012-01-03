@@ -38,6 +38,7 @@ import org.hippoecm.repository.TestCase;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -112,6 +113,12 @@ public class ImportTest extends TestCase {
     public void testWhiteSpacesInLargeBinary() throws Exception {
         data = new byte[1024*125];
         testWhiteSpacesInBinary(data);
+    }
+    
+    @Test
+    public void testNoFailureWithFaultyNamespaceDeclaration() throws Exception {
+        InputStream in = getClass().getClassLoader().getResourceAsStream("import/faulty-namespace.xml");
+        session.importXML("/test", in, ImportUUIDBehavior.IMPORT_UUID_CREATE_NEW);
     }
 
     static class ByteArrayBinary implements Binary {
