@@ -27,6 +27,21 @@
   <version>2.18.09-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <distributionManagement>
+    <repository>
+      <name>Hippo Maven 2 Enterprise Repository</name>
+      <id>hippo-maven2-enterprise</id>
+      <url>https://maven.onehippo.com/content/repositories/enterprise-releases/</url>
+      <uniqueVersion>false</uniqueVersion>
+    </repository>
+    <snapshotRepository>
+      <name>Hippo Maven 2 Enterprise Snapshots</name>
+      <id>hippo-maven2-enterprise-snapshots</id>
+      <url>https://maven.onehippo.com/content/repositories/enterprise-snapshots/</url>
+      <uniqueVersion>false</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement>
+
   <repositories>
     <repository>
       <id>hippo-maven2-snapshots</id>
