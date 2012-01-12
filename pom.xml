@@ -27,6 +27,7 @@
   <version>2.18.09-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <!-- override distribution management: 7.5 maintenance is enterprise -->
   <distributionManagement>
     <repository>
       <name>Hippo Maven 2 Enterprise Repository</name>
