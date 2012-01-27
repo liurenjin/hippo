@@ -1134,6 +1134,14 @@ public class WorkflowManagerImpl implements WorkflowManager {
         public String getUserIdentity() {
             return session.getUserID();
         }
+        
+        public Session getUserSession() {
+            return session;
+        }
+        
+        public Session getInternalWorkflowSession() {
+            return WorkflowManagerImpl.this.rootSession;
+        }
 
         public RepositoryMap getWorkflowConfiguration() {
             try {
