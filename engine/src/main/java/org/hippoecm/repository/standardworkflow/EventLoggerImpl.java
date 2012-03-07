@@ -16,7 +16,6 @@
 package org.hippoecm.repository.standardworkflow;
 
 import java.io.Serializable;
-import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 // FIXME: this class has prior knowledge of the hippolog namespace
 
-public class EventLoggerImpl implements EventLoggerWorkflow, InternalWorkflow {
+public class EventLoggerImpl implements WorkflowEventLoggerWorkflow, InternalWorkflow {
     @SuppressWarnings("unused")
     private static final String SVN_ID = "$Id$";
 
@@ -46,7 +45,7 @@ public class EventLoggerImpl implements EventLoggerWorkflow, InternalWorkflow {
     private String appender;
     private long maxSize;
 
-    public EventLoggerImpl(Session userSession, Session rootSession, Node subject) throws RemoteException {
+    public EventLoggerImpl(Session userSession, Session rootSession, Node subject) {
         this.rootSession = rootSession;
         if (subject != null) {
             try {
@@ -63,7 +62,7 @@ public class EventLoggerImpl implements EventLoggerWorkflow, InternalWorkflow {
         }
     }
 
-    public EventLoggerImpl(Session rootSession) throws RemoteException, RepositoryException {
+    public EventLoggerImpl(Session rootSession) throws RepositoryException {
         this(rootSession, rootSession, getDefaultLogFolder(rootSession));
     }
 
@@ -78,13 +77,14 @@ public class EventLoggerImpl implements EventLoggerWorkflow, InternalWorkflow {
         return new TreeMap<String, Serializable>();
     }
 
+    @Override
     public void logEvent(String who, String className, String methodName) {
         log(who, className, methodName);
         addLogNode(who, className, methodName);
     }
 
-    public void logWorkflowStep(String who, String className, String methodName, Object[] args, Object returnObject,
-            String documentPath) {
+    @Override
+    public void logWorkflowStep(String who, String className, String methodName, Object[] args, Object returnObject, String documentPath) {
         String returnType = getReturnType(returnObject);
         String returnValue = getReturnValue(returnObject);
         String[] arguments = replaceObjectsWithStrings(args);
