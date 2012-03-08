@@ -47,13 +47,13 @@ public class ConfigurationTest extends TestCase {
 
     @After
     public void tearDown() throws Exception {
-        if (session.getRootNode().hasNode("hippo:configuration/hippo:initialize/testnode")) {
+        while (session.getRootNode().hasNode("hippo:configuration/hippo:initialize/testnode")) {
             session.getRootNode().getNode("hippo:configuration/hippo:initialize/testnode").remove();
             session.save();
         }
         super.tearDown();
     }
-    private boolean updateDone;
+    private volatile boolean updateDone;
 
     private boolean saveAndWaitForUpdate(Node node) throws RepositoryException {
         ObservationManager observation = node.getSession().getWorkspace().getObservationManager();
