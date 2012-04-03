@@ -33,6 +33,8 @@ import org.apache.jackrabbit.core.HierarchyManager;
 import org.apache.jackrabbit.core.HierarchyManagerImpl;
 import org.apache.jackrabbit.core.NamespaceRegistryImpl;
 import org.apache.jackrabbit.core.SearchManager;
+import org.apache.jackrabbit.core.cluster.ClusterNode;
+import org.apache.jackrabbit.core.config.ClusterConfig;
 import org.apache.jackrabbit.core.config.ConfigurationException;
 import org.apache.jackrabbit.core.config.RepositoryConfig;
 import org.apache.jackrabbit.core.config.WorkspaceConfig;
@@ -66,12 +68,24 @@ public class RepositoryImpl extends org.apache.jackrabbit.core.RepositoryImpl {
 
     private static Logger log = LoggerFactory.getLogger(RepositoryImpl.class);
 
+    /**
+     * Key to a <code>string</code> descriptor. Returns the repository cluster id if
+     * and only if clustering is enabled.
+     */
+    public static final String JACKRABBIT_CLUSTER_ID = "jackrabbit.cluster.id";
+    
     private Map<String, ReplicatorNode> replicatorNodes;
 
     private ReplicationJournal journal;
 
     protected RepositoryImpl(RepositoryConfig repConfig) throws RepositoryException {
         super(repConfig);
+        ClusterConfig clusterConfig = getRepositoryConfig().getClusterConfig();
+        // setting the cluster node id as descriptor here can be removed
+        // when we upgrade to JR 2.2.12 / 2.4.1
+        if (clusterConfig != null && clusterConfig.getId() != null) {
+            setDescriptor(JACKRABBIT_CLUSTER_ID, clusterConfig.getId());
+        }
     }
 
     @Override
