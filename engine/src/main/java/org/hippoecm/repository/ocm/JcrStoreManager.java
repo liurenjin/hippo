@@ -61,7 +61,11 @@ public class JcrStoreManager extends AbstractStoreManager {
     // FIXME
     public void setSession(Session session) {
         this.session = session;
-        columnResolver = new ColumnResolverImpl();
+        if (session != null) {
+            columnResolver = new ColumnResolverImpl();
+        } else {
+            columnResolver = null;
+        }
         typeResolver = null;
     }
     // FIXME
