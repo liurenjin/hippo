@@ -104,6 +104,9 @@ public class RepositoryWorkflowImpl implements RepositoryWorkflow, InternalWorkf
                         public void registerStartTag(String name) {
                         }
 
+                        public void registerExpectTag(String name) {
+                        }
+
                         public void registerEndTag(String name) {
                         }
 
