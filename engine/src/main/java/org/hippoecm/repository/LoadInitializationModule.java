@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -130,7 +131,11 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
 
     public void initialize(Session session) throws RepositoryException {
         this.session = session;
-        ObservationManager obMgr = session.getWorkspace().getObservationManager();
+        // We really need an undecorated workspace so that we can register a Asynchronous event listener
+        // This in its turn guarantees that the search index has received the event prior to this module.
+        Workspace workspace = session.getWorkspace();
+        workspace = org.hippoecm.repository.decorating.WorkspaceDecorator.unwrap(workspace);
+        ObservationManager obMgr = workspace.getObservationManager();
         obMgr.addEventListener(this, Event.NODE_ADDED | Event.PROPERTY_ADDED, "/"
                 + HippoNodeType.CONFIGURATION_PATH + "/" + HippoNodeType.INITIALIZE_PATH,
                 true, null, null, true);
@@ -496,7 +501,7 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                             }
                             boolean isMultiple = false;
                             boolean isSingle = false;
-                            Set<NodeType> nodeTypes = new TreeSet<NodeType>();
+                            Set<NodeType> nodeTypes = new HashSet<NodeType>();
                             nodeTypes.add(last.node.getPrimaryNodeType());
                             for (NodeType nodeType : last.node.getMixinNodeTypes())
                                 nodeTypes.add(nodeType);
