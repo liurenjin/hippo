@@ -16,6 +16,7 @@
 package org.hippoecm.repository.standardworkflow;
 
 import org.hippoecm.repository.api.Document;
+import org.hippoecm.repository.api.Workflow;
 import org.hippoecm.repository.api.WorkflowException;
 import org.hippoecm.repository.ext.InternalWorkflow;
 import org.slf4j.Logger;
@@ -40,7 +41,8 @@ import java.util.Random;
  */
 public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkflow, InternalWorkflow {
 
-    private static final Logger log = LoggerFactory.getLogger(WorkflowEventLoggerWorkflowImpl.class);
+    final Logger log = LoggerFactory.getLogger(Workflow.class);
+
     private static final Random random = new Random();
     
     private static final String ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -90,6 +92,12 @@ public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkf
             }
             return;
         }
+
+        String returnType = getReturnType(returnObject);
+        String returnValue = getReturnValue(returnObject);
+        String[] arguments = replaceObjectsWithStrings(args);
+        log(userName, className, methodName, documentPath, returnType, returnValue, arguments);
+
         try {
             char[] randomChars = generateRandomCharArray(HIERARCHY_DEPTH);
             Node folder = getOrCreateFolder(charArrayToRelPath(randomChars, HIERARCHY_DEPTH-1));
@@ -104,15 +112,12 @@ public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkf
             if (documentPath != null) {
                 logNode.setProperty("hippolog:eventDocument", documentPath);
             }
-            String returnType = getReturnType(returnObject);
             if (returnType != null) {
                 logNode.setProperty("hippolog:eventReturnType", returnType);
             }
-            String returnValue = getReturnValue(returnObject);
             if (returnValue != null) {
                 logNode.setProperty("hippolog:eventReturnValue", returnValue);
             }
-            String[] arguments = replaceObjectsWithStrings(args);
             if (arguments != null) {
                 logNode.setProperty("hippolog:eventArguments", arguments);
             }
@@ -213,6 +218,33 @@ public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkf
             clusteNodeId = DEFAULT_CLUSTER_NODE_ID;
         }
         return clusteNodeId;
+    }
+
+    private void log(String who, String className, String methodName, String documentPath, String returnType,
+            String returnValue, String[] arguments) {
+        StringBuffer logMessage = new StringBuffer();
+        logMessage.append("user=[").append(who).append("]");
+        logMessage.append(" method=[").append(className).append('.').append(methodName).append("]");
+        if (returnType != null) {
+            logMessage.append(" returnType=[").append(returnType).append("]");
+            logMessage.append(" returnVale=[").append(returnValue).append("]");
+        }
+        if (documentPath != null) {
+            logMessage.append(" documentPath=[").append(documentPath).append("]");
+        }
+        if (arguments != null) {
+            logMessage.append(" arguments=[");
+            boolean firstArgument = true;
+            for(String argument : arguments) {
+                if(firstArgument)
+                    firstArgument = false;
+                else
+                    logMessage.append(", ");
+                logMessage.append(argument);
+            }
+            logMessage.append("]");
+        }
+        log.info(logMessage.toString());
     }
 
 }
