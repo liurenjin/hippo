@@ -36,6 +36,15 @@ public final class ViewNodeId extends MirrorNodeId implements IFilterNodeId {
     public final LinkedHashMap<Name, String> order;
     public final Name parentName;
 
+    public ViewNodeId(HippoVirtualProvider provider, NodeId parent, NodeId upstream, StateProviderContext context,
+                      Name name, LinkedHashMap<Name, String> view, LinkedHashMap<Name, String> order, boolean singledView) {
+        super(provider, parent, context, name, upstream);
+        this.view = view;
+        this.order = order;
+        this.singledView = singledView;
+        this.parentName = null;
+    }
+
     public ViewNodeId(HippoVirtualProvider provider, NodeId parent, Name parentName, NodeId upstream, StateProviderContext context,
             Name name, LinkedHashMap<Name, String> view, LinkedHashMap<Name, String> order, boolean singledView) {
         super(provider, parent, context, name, upstream);
