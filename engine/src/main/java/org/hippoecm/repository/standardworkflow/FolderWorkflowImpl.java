@@ -218,7 +218,7 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
                     newValue = arguments.get(propPath);
                 } else {
                     HierarchyResolver hr = ((HippoWorkspace) rootSession.getWorkspace()).getHierarchyResolver();
-                    Property parentProperty = hr.getProperty(target, relpath);
+                    Property parentProperty = hr.getProperty(target, propPath);
                     if (parentProperty == null) {
                         continue;
                     } else {
