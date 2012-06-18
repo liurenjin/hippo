@@ -41,14 +41,13 @@ import java.util.Random;
  */
 public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkflow, InternalWorkflow {
 
-    final Logger log = LoggerFactory.getLogger(Workflow.class);
-
     private static final Random random = new Random();
     
     private static final String ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
     private static final String DEFAULT_CLUSTER_NODE_ID = "default";
     private static final int HIERARCHY_DEPTH = 4;
 
+    private final Logger log = LoggerFactory.getLogger(Workflow.class);
     private final Session session;
     private final Node logFolder;
 
@@ -96,7 +95,7 @@ public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkf
         String returnType = getReturnType(returnObject);
         String returnValue = getReturnValue(returnObject);
         String[] arguments = replaceObjectsWithStrings(args);
-        log(userName, className, methodName, documentPath, returnType, returnValue, arguments);
+        logToLog4j(userName, className, methodName, documentPath, returnType, returnValue, arguments);
 
         try {
             char[] randomChars = generateRandomCharArray(HIERARCHY_DEPTH);
@@ -220,14 +219,14 @@ public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkf
         return clusteNodeId;
     }
 
-    private void log(String who, String className, String methodName, String documentPath, String returnType,
-            String returnValue, String[] arguments) {
-        StringBuffer logMessage = new StringBuffer();
+    private void logToLog4j(String who, String className, String methodName, String documentPath, String returnType,
+                            String returnValue, String[] arguments) {
+        StringBuilder logMessage = new StringBuilder();
         logMessage.append("user=[").append(who).append("]");
         logMessage.append(" method=[").append(className).append('.').append(methodName).append("]");
         if (returnType != null) {
             logMessage.append(" returnType=[").append(returnType).append("]");
-            logMessage.append(" returnVale=[").append(returnValue).append("]");
+            logMessage.append(" returnValue=[").append(returnValue).append("]");
         }
         if (documentPath != null) {
             logMessage.append(" documentPath=[").append(documentPath).append("]");
@@ -236,10 +235,12 @@ public class WorkflowEventLoggerWorkflowImpl implements WorkflowEventLoggerWorkf
             logMessage.append(" arguments=[");
             boolean firstArgument = true;
             for(String argument : arguments) {
-                if(firstArgument)
+                if(firstArgument) {
                     firstArgument = false;
-                else
+                }
+                else {
                     logMessage.append(", ");
+                }
                 logMessage.append(argument);
             }
             logMessage.append("]");
