@@ -355,10 +355,7 @@ public interface HippoNodeType {
      *
      */
     public static final String HIPPO_CONTENTROOT = "hippo:contentroot";
-    /**
-     * @deprecated
-     */
-    @Deprecated
+ 
     public static final String HIPPO_CONTENTDELETE = "hippo:contentdelete";
     /**
      *
