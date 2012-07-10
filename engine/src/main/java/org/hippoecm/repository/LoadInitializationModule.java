@@ -25,19 +25,18 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
-import java.util.jar.Attributes.Name;
 import java.util.jar.Manifest;
+
 import javax.jcr.AccessDeniedException;
 import javax.jcr.ImportUUIDBehavior;
 import javax.jcr.InvalidItemStateException;
@@ -389,7 +388,7 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                                         boolean removeSupported = true;
                                         String contextNodeName = null;
                                         // 8 kb should be more than enough to read the root node
-                                        contentStream.mark(8192);
+                                        contentStream.mark(16384);
                                         XmlPullParser xpp = factory.newPullParser();
                                         xpp.setInput(contentStream, null);
                                         while(xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
