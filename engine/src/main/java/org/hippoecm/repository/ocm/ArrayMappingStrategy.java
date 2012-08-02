@@ -16,10 +16,12 @@
 package org.hippoecm.repository.ocm;
 
 import java.lang.reflect.Array;
+
 import javax.jcr.AccessDeniedException;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.Property;
+import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.UnsupportedRepositoryOperationException;
@@ -29,6 +31,7 @@ import javax.jcr.ValueFormatException;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.version.VersionException;
+
 import org.apache.jackrabbit.JcrConstants;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
@@ -36,7 +39,6 @@ import org.datanucleus.identity.OIDImpl;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.types.ObjectStringConverter;
-import org.hippoecm.repository.ocm.JcrOID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -287,103 +289,125 @@ public class ArrayMappingStrategy extends ValueMappingStrategy {
         }
         try {
             ValueFactory vf = session.getValueFactory();
-            Value[] values = (object != null ? new Value[Array.getLength(object)] : null);
-            if(values != null) {
-            if (Boolean.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getBoolean(object, i));
+            if (object != null) {
+                int propertyType;
+                Value[] values = new Value[Array.getLength(object)];
+                if (Boolean.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.BOOLEAN;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getBoolean(object, i));
+                    }
+                } else if (Byte.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getByte(object, i));
+                    }
+                } else if (Character.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getChar(object, i));
+                    }
+                } else if (Double.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.DOUBLE;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getDouble(object, i));
+                    }
+                } else if (Float.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.DOUBLE;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getFloat(object, i));
+                    }
+                } else if (Integer.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getInt(object, i));
+                    }
+                } else if (Long.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getLong(object, i));
+                    }
+                } else if (Short.TYPE.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getShort(object, i));
+                    }
+                } else if (Boolean.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.BOOLEAN;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue(Array.getBoolean(object, i));
+                    }
+                } else if (String.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.STRING;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((String)Array.get(object, i));
+                    }
+                } else if (Byte.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((Byte)Array.get(object, i));
+                    }
+                } else if (Character.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((Character)Array.get(object, i));
+                    }
+                } else if (Double.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.DOUBLE;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((Double)Array.get(object, i));
+                    }
+                } else if (Float.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.DOUBLE;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((Float)Array.get(object, i));
+                    }
+                } else if (Integer.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((Integer)Array.get(object, i));
+                    }
+                } else if (Long.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((Long)Array.get(object, i));
+                    }
+                } else if (Short.class.isAssignableFrom(componentType)) {
+                    propertyType = PropertyType.LONG;
+                    for(int i=0; i<values.length; i++) {
+                        values[i] = vf.createValue((Short)Array.get(object, i));
+                    }
+                } else {
+                    propertyType = PropertyType.STRING;
+                    // check String converter
+                    ObjectStringConverter converter = null;
+        //            if (Date.class.isAssignableFrom(type)) {
+        //                converter = new DateToGeneralizedTimeStringConverter();
+        //            } else if (Calendar.class.isAssignableFrom(type)) {
+        //                converter = new CalendarToGeneralizedTimeStringConverter();
+        //            } else {
+                    converter = op.getExecutionContext().getOMFContext().getTypeManager().getStringConverter(type);
+        //            }
+                    if (converter != null) {
+                        for(int i=0; i<values.length; i++) {
+                            values[i] = vf.createValue(converter.toString(Array.get(object, i)));
+                        }
+                    } else {
+                        throw new NucleusException("Field " + mmd.getFullFieldName() + " cannot be persisted because type="
+                                + mmd.getTypeName() + " is not supported for this datastore");
+                    }
                 }
-            } else if (Byte.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getByte(object, i));
-                }
-            } else if (Character.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getChar(object, i));
-                }
-            } else if (Double.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getDouble(object, i));
-                }
-            } else if (Float.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getFloat(object, i));
-                }
-            } else if (Integer.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getInt(object, i));
-                }
-            } else if (Long.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getLong(object, i));
-                }
-            } else if (Short.TYPE.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getShort(object, i));
-                }
-            } else if (Boolean.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(Array.getBoolean(object, i));
-                }
-            } else if (String.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((String)Array.get(object, i));
-                }
-            } else if (Byte.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((Byte)Array.get(object, i));
-                }
-            } else if (Character.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((Character)Array.get(object, i));
-                }
-            } else if (Double.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((Double)Array.get(object, i));
-                }
-            } else if (Float.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((Float)Array.get(object, i));
-                }
-            } else if (Integer.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((Integer)Array.get(object, i));
-                }
-            } else if (Long.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((Long)Array.get(object, i));
-                }
-            } else if (Short.class.isAssignableFrom(componentType)) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue((Short)Array.get(object, i));
-                }
+                storeValues(values, propertyType);
             } else {
-            // check String converter
-            ObjectStringConverter converter = null;
-//            if (Date.class.isAssignableFrom(type)) {
-//                converter = new DateToGeneralizedTimeStringConverter();
-//            } else if (Calendar.class.isAssignableFrom(type)) {
-//                converter = new CalendarToGeneralizedTimeStringConverter();
-//            } else {
-            converter = op.getExecutionContext().getOMFContext().getTypeManager().getStringConverter(type);
-//            }
-            if (converter != null) {
-                for(int i=0; i<values.length; i++) {
-                    values[i] = vf.createValue(converter.toString(Array.get(object, i)));
-                }
-            } else {
-                throw new NucleusException("Field " + mmd.getFullFieldName() + " cannot be persisted because type="
-                        + mmd.getTypeName() + " is not supported for this datastore");
+                // Retaining backwards compatible
+                storeValues(null, PropertyType.UNDEFINED);
             }
-        }
-    }
-            storeValues(values);
         } catch(RepositoryException ex) {
             throw new NucleusException(ex.getMessage(), ex);
         }
     }
 
-    private void storeValues(Value[] values) {
+    private void storeValues(Value[] values, int type) {
         try {
             Node node = null;
             Object objectId = op.getExternalObjectId();
@@ -404,7 +428,7 @@ public class ArrayMappingStrategy extends ValueMappingStrategy {
                 if (!node.isCheckedOut()) {
                     checkoutNode(node);
                 }
-                property = node.setProperty(mmd.getColumn(), values);
+                property = node.setProperty(mmd.getColumn(), values, type);
             } else {
                 if (!property.getParent().isCheckedOut()) {
                     checkoutNode(property.getParent());
