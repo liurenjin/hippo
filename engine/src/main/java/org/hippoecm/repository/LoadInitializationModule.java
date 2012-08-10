@@ -641,11 +641,17 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                         try {
                             Manifest manifest = new Manifest(new URL(manifestUrlString).openStream());
                             String buildString = manifest.getMainAttributes().getValue(new Attributes.Name("Implementation-Build"));
-                            if (buildString != null) {
-                                buildNumber = Long.parseLong(buildString);
+                            if (buildString != null && !buildString.isEmpty()) {
+                                try {
+                                    buildNumber = Long.parseLong(buildString);
+                                } catch (NumberFormatException e) {
+                                    log.error("Illegal Implementation-Build manifest entry '" + buildString + "': must be a number");
+                                }
+                            } else {
+                                log.warn("Missing Implementation-Build manifest entry");
                             }
                         } catch (IOException ex) {
-                            // deliberate ignore, manifest file not available so no build number can be obtained
+                            log.warn("Manifest could not be loaded to determine build number");
                         }
                     }
                     long existingBuildNumber = -1;
