@@ -647,8 +647,6 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                                 } catch (NumberFormatException e) {
                                     log.error("Illegal Implementation-Build manifest entry '" + buildString + "': must be a number");
                                 }
-                            } else {
-                                log.warn("Missing Implementation-Build manifest entry");
                             }
                         } catch (IOException ex) {
                             log.warn("Manifest could not be loaded to determine build number");
@@ -670,6 +668,8 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                             moved.setProperty(HippoNodeType.HIPPO_EXTENSIONSOURCE, configurationURL.toString());
                             if (buildNumber >= 0) {
                                 moved.setProperty(HippoNodeType.HIPPO_EXTENSIONBUILD, buildNumber);
+                            } else {
+                                log.warn("Build number not valid, not storing it on initialize item '" + n.getName() + "'.  Is Implementation-Build manifest entry missing?");
                             }
                         }
                         for (String propertyName : new String[] { HippoNodeType.HIPPO_SEQUENCE, HippoNodeType.HIPPO_NAMESPACE, HippoNodeType.HIPPO_NODETYPESRESOURCE, HippoNodeType.HIPPO_NODETYPES, HippoNodeType.HIPPO_CONTENTRESOURCE, HippoNodeType.HIPPO_CONTENT, HippoNodeType.HIPPO_CONTENTROOT, HippoNodeType.HIPPO_CONTENTDELETE, HippoNodeType.HIPPO_CONTENTPROPSET, HippoNodeType.HIPPO_CONTENTPROPADD, HippoNodeType.HIPPO_RELOADONSTARTUP }) {
