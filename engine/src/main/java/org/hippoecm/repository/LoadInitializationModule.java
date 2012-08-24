@@ -668,7 +668,7 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                             moved.setProperty(HippoNodeType.HIPPO_EXTENSIONSOURCE, configurationURL.toString());
                             if (buildNumber >= 0) {
                                 moved.setProperty(HippoNodeType.HIPPO_EXTENSIONBUILD, buildNumber);
-                            } else {
+                            } else if (n.hasProperty(HippoNodeType.HIPPO_RELOADONSTARTUP) && n.getProperty(HippoNodeType.HIPPO_RELOADONSTARTUP).getBoolean()) {
                                 log.warn("Build number not valid, not storing it on initialize item '" + n.getName() + "'.  Is Implementation-Build manifest entry missing?");
                             }
                         }
