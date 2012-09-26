@@ -63,7 +63,12 @@ public class SchedulerModule implements DaemonModule
             schedFactory = new SchedulerFactory(session);
             schedFactory.initialize(properties);
             scheduler = (JCRScheduler) schedFactory.getScheduler();
-            scheduler.start();
+            if (!Boolean.getBoolean("hippo.scheduler.disabled")) {
+                scheduler.start();
+            } else {
+                log.info("Hippo scheduler was disabled by hippo.scheduler.disabled property, " +
+                        "scheduled actions will not be executed by this cluster node");
+            }
         } catch (SchedulerException ex) {
             log.error(ex.getClass().getName()+": "+ex.getMessage(), ex);
         }
