@@ -20,10 +20,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Calendar;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
@@ -32,6 +32,9 @@ import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.ValueFormatException;
+import javax.jcr.lock.Lock;
+import javax.jcr.lock.LockException;
+import javax.jcr.lock.LockManager;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.QueryResult;
@@ -394,27 +397,22 @@ public class JCRJobStore implements JobStore {
                 for(NodeIterator iter = result.getNodes(); iter.hasNext(); ) {
                     Node triggerNode = iter.nextNode();
                     if(triggerNode != null && triggerNode.hasProperty("hipposched:nextFireTime")) {
-                        if (triggerNode.isNodeType("mix:versionable") && !triggerNode.isCheckedOut()) {
-                            triggerNode.checkout();
+                        if (lock(session, triggerNode.getPath())) {
+                            if (triggerNode.isNodeType("mix:versionable") && !triggerNode.isCheckedOut()) {
+                                triggerNode.checkout();
+                            }
+                            Object o = new ObjectInputStream(triggerNode.getProperty("hipposched:data").getStream()).readObject();
+                            Trigger trigger = (Trigger)o;
+                            trigger.setName(triggerNode.getUUID());
+                            trigger.setJobName(triggerNode.getParent().getParent().getUUID());
+                            triggerNode.getProperty("hipposched:nextFireTime").remove();
+                            try {
+                                session.save();
+                                return (Trigger)o;
+                            } catch(RepositoryException ex) {
+                                session.refresh(false);
+                            }
                         }
-                        Object o = new ObjectInputStream(triggerNode.getProperty("hipposched:data").getStream()).readObject();
-                        Trigger trigger = (Trigger)o;
-                        trigger.setName(triggerNode.getUUID());
-                        trigger.setJobName(triggerNode.getParent().getParent().getUUID());
-                        triggerNode.getProperty("hipposched:nextFireTime").remove();
-                        /* If saving the trigger node fails, this is most likely due to another node in
-                         * a clustered installation picking up the trigger.  This will render the nextFireTime
-                         * to be already removed.  In such a case, it is proper to just proceed to the next
-                         * possible trigger in the query.
-                         */
-                        try {
-                            session.save();
-                            return (Trigger)o;
-                        } catch(RepositoryException ex) {
-                            session.refresh(false);
-                        }
-                    } else {
-                        triggerNode = null;
                     }
                 }
             }
@@ -456,6 +454,7 @@ public class JCRJobStore implements JobStore {
                 }
                 triggerNode.setProperty("hipposched:nextFireTime", triggerNode.getProperty("hipposched:fireTime").getValue());
                 triggerNode.save();
+                unlock(session, triggerNode.getPath());
             }
         } catch(RepositoryException ex) {
             log.error(ex.getClass().getName()+": "+ex.getMessage(), ex);
@@ -508,6 +507,7 @@ public class JCRJobStore implements JobStore {
                     triggerNode.setProperty("hipposched:nextFireTime", cal);
                     triggerNode.setProperty("hipposched:fireTime", cal);
                     triggerNode.save();
+                    unlock(session, triggerNode.getPath());
                 } else {
                     if(jobNode != null) {
                         Node handle = jobNode.getParent();
@@ -527,6 +527,7 @@ public class JCRJobStore implements JobStore {
         }
     }
 
+
     public void setInstanceId(String id) {
         clusteredInstanceId = id;
     }
@@ -544,4 +545,62 @@ public class JCRJobStore implements JobStore {
         }
         return session;
     }
+
+    private static boolean lock(final Session session, final String nodePath) throws RepositoryException {
+        log.debug("Trying to obtain lock on " + nodePath);
+        final LockManager lockManager = session.getWorkspace().getLockManager();
+        if (!lockManager.isLocked(nodePath)) {
+            try {
+                ensureIsLockable(session, nodePath);
+                lockManager.lock(nodePath, false, false, 2*60, getClusterNodeId(session));
+                log.debug("Lock successfully obtained on " + nodePath);
+                return true;
+            } catch (LockException e) {
+                // happens when other cluster node beat us to it
+                log.debug("Failed to set lock on "  + nodePath +  ": " + e.getMessage());
+            }
+        } else {
+            log.debug("Already locked " + nodePath);
+        }
+        return false;
+
+    }
+
+    private static void ensureIsLockable(Session session, String nodePath) throws RepositoryException {
+        final Node node = session.getNode(nodePath);
+        if (!node.isNodeType("mix:lockable")) {
+            node.addMixin("mix:lockable");
+        }
+        session.save();
+    }
+
+    private static String getClusterNodeId(Session session) {
+        String clusteNodeId = session.getRepository().getDescriptor("jackrabbit.cluster.id");
+        if (clusteNodeId == null) {
+            clusteNodeId = "default";
+        }
+        return clusteNodeId;
+    }
+
+    private static void unlock(Session session, String nodePath) throws RepositoryException {
+        log.debug("Trying to release lock on " + nodePath);
+        try {
+            final LockManager lockManager = session.getWorkspace().getLockManager();
+            if (lockManager.isLocked(nodePath)) {
+                final Lock lock = lockManager.getLock(nodePath);
+                if (lock.isLockOwningSession()) {
+                    lockManager.unlock(nodePath);
+                    log.debug("Lock successfully released on " + nodePath);
+                } else {
+                    log.debug("We don't own the lock on " + nodePath);
+                }
+            } else {
+                log.debug("Not locked " + nodePath);
+            }
+        } catch (RepositoryException e) {
+            log.error("Failed to release lock on " + nodePath, e);
+        }
+
+    }
+
 }
