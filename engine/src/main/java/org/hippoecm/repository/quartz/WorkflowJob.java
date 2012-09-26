@@ -26,10 +26,14 @@ import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WorkflowJob implements Job {
     @SuppressWarnings("unused")
     private static final String SVN_ID = "$Id$";
+
+    private static final Logger log = LoggerFactory.getLogger(WorkflowJob.class);
 
     private static final String IMPERSONATED_USER = "workflowuser";
     private static final char[] IMPERSONATED_PASSWORD = new char[0];
@@ -48,6 +52,11 @@ public class WorkflowJob implements Job {
             }
             String uuid = (String) jobDataMap.get("document");
             invocation.setSubject(impersonated.getNodeByIdentifier(uuid));
+
+            if (log.isDebugEnabled()) {
+                log.debug("Running workflow job " + jobDetail.getName() + " on subject " + uuid);
+            }
+
             invocation.invoke(impersonated);
             impersonated.save();
 
