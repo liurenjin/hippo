@@ -30,14 +30,13 @@ import org.apache.jackrabbit.core.HierarchyManager;
 import org.apache.jackrabbit.core.HierarchyManagerImpl;
 import org.apache.jackrabbit.core.NamespaceRegistryImpl;
 import org.apache.jackrabbit.core.SearchManager;
-import org.apache.jackrabbit.core.cluster.ClusterNode;
-import org.apache.jackrabbit.core.config.ClusterConfig;
 import org.apache.jackrabbit.core.config.ConfigurationException;
 import org.apache.jackrabbit.core.config.RepositoryConfig;
 import org.apache.jackrabbit.core.config.WorkspaceConfig;
 import org.apache.jackrabbit.core.fs.FileSystem;
 import org.apache.jackrabbit.core.id.NodeId;
 import org.apache.jackrabbit.core.journal.JournalException;
+import org.apache.jackrabbit.core.lock.LockManagerImpl;
 import org.apache.jackrabbit.core.nodetype.NodeTypeRegistry;
 import org.apache.jackrabbit.core.persistence.PersistenceManager;
 import org.apache.jackrabbit.core.security.JackrabbitSecurityManager;
@@ -283,6 +282,11 @@ public class RepositoryImpl extends org.apache.jackrabbit.core.RepositoryImpl {
          */
         protected Session getRootSession() throws RepositoryException {
             return super.getSystemSession();
+        }
+
+        @Override
+        protected LockManagerImpl createLockManager() throws RepositoryException {
+            return new HippoLockManager(getSystemSession(), getFileSystem(), context.getExecutor());
         }
     }
 
