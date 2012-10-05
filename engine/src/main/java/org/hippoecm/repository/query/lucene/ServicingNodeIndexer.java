@@ -15,6 +15,7 @@
  */
 package org.hippoecm.repository.query.lucene;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -29,7 +30,9 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.NamespaceException;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+import javax.jcr.Value;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.Parser;
 import org.apache.jackrabbit.core.id.PropertyId;
@@ -114,9 +117,9 @@ public class ServicingNodeIndexer extends NodeIndexer {
     }
 
     private class BinaryValue {
-        private Object internalValue;
+        private InternalValue internalValue;
         private String fieldName;
-        public BinaryValue(String fieldName, Object internalValue) {
+        public BinaryValue(String fieldName, InternalValue internalValue) {
             this.internalValue = internalValue;
             this.fieldName = fieldName;
         }
@@ -144,63 +147,19 @@ public class ServicingNodeIndexer extends NodeIndexer {
         if(this.documentBinaries != null && !documentBinaries.isEmpty()) {
             try {
                 String hippoTextName = resolver.getJCRName(servicingIndexingConfig.getHippoTextPropertyName());
-                if (documentBinaries.size() > 1) {
-                    boolean hippoTextFieldPresent = false;
-                    // inspect whether there is a hippo:text version
-                    for (BinaryValue binVal : documentBinaries) {
-                        if (hippoTextName.equals(binVal.fieldName)) {
-                            hippoTextFieldPresent = true;
-                        }
-                    }
-                    if (hippoTextFieldPresent) {
-                        log.debug("The '{}' property is present and thus will be used to index this binary.",
-                                HippoNodeType.HIPPO_TEXT);
-                        for (BinaryValue binval : documentBinaries) {
-                            if (hippoTextName.equals(binval.fieldName)) {
-                                try {
-                                    InternalValue type = getValue(NameConstants.JCR_MIMETYPE);
-                                    if (type != null) {
-                                        Metadata metadata = new Metadata();
-                                        metadata.set(Metadata.CONTENT_TYPE, type.getString());
-                                        InternalValue encoding = getValue(NameConstants.JCR_ENCODING);
-                                        if (encoding != null) {
-                                            metadata.set(Metadata.CONTENT_ENCODING, encoding.getString());
-                                        }
-                                        doc.add(createFulltextField((InternalValue)binval.internalValue, metadata));
-                                    }
-                                } catch (ItemStateException e) {
-                                    log.warn("Exception during indexing hippo:text binary property", e);
-                                }
-                            }
-                        }
-                    } else {
-                        for (BinaryValue val : documentBinaries) {
-                            super.addBinaryValue(doc, val.fieldName, (InternalValue) val.internalValue);
-                        }
-                    }
-
-                } else {
-                    BinaryValue binVal = documentBinaries.get(0);
+                BinaryValue hippoTextValue = null;
+                // inspect whether there is a hippo:text version
+                for (BinaryValue binVal : documentBinaries) {
                     if (hippoTextName.equals(binVal.fieldName)) {
-                        log.debug("The '{}' property is present and thus will be used to index this binary.",
-                                HippoNodeType.HIPPO_TEXT);
-                        try {
-                            InternalValue type = getValue(NameConstants.JCR_MIMETYPE);
-                            if (type != null) {
-                                Metadata metadata = new Metadata();
-                                metadata.set(Metadata.CONTENT_TYPE, type.getString());
-                                InternalValue encoding = getValue(NameConstants.JCR_ENCODING);
-                                if (encoding != null) {
-                                    metadata.set(Metadata.CONTENT_ENCODING, encoding.getString());
-                                }
-                                doc.add(createFulltextField((InternalValue)binVal.internalValue, metadata));
-                            }
-                        } catch (ItemStateException e) {
-                            log.warn("Exception during indexing hippo:text binary property", e);
-                        }
-                    } else {
-                        // fallback to original Jackrabbit binary indexing
-                        super.addBinaryValue(doc, binVal.fieldName, (InternalValue) binVal.internalValue);
+                        hippoTextValue = binVal;
+                        break;
+                    }
+                }
+                if (hippoTextValue != null) {
+                    addHippoTextValue(doc, hippoTextValue);
+                } else {
+                    for (BinaryValue val : documentBinaries) {
+                        super.addBinaryValue(doc, val.fieldName, val.internalValue);
                     }
                 }
             } catch (NamespaceException e) {
@@ -229,8 +188,9 @@ public class ServicingNodeIndexer extends NodeIndexer {
                     nodename = prefix + ":" + nodename;
                 }
                 // index the nodename to sort on
-                doc.add(new Field(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, nodename, Field.Store.NO,
-                        Field.Index.NO_NORMS, Field.TermVector.NO));
+                final Field field = new Field(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, nodename, Field.Store.NO,
+                        Field.Index.NO_NORMS, Field.TermVector.NO);
+                doc.add(field);
 
                 /**
                  * index the nodename to search on. We index this as hippo:_localname, a pseudo property which does not really exist but
@@ -298,6 +258,17 @@ public class ServicingNodeIndexer extends NodeIndexer {
         }
         return doc;
     }
+
+    private void addHippoTextValue(final Document doc, final BinaryValue hippoTextBinaryValue) throws RepositoryException {
+        log.debug("The '{}' property is present and thus will be used to index this binary", HippoNodeType.HIPPO_TEXT);
+        try {
+            final String hippoText = IOUtils.toString(hippoTextBinaryValue.internalValue.getStream());
+            doc.add(createFulltextField(hippoText, supportHighlighting, supportHighlighting));
+        } catch (IOException e) {
+            log.warn("Exception during indexing hippo:text binary property", e);
+        }
+    }
+
 
     private void indexNodeName(Document doc, String localName) {
         // simple String
