@@ -649,7 +649,9 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                                 }
                             }
                         } catch (IOException ex) {
-                            log.warn("Manifest could not be loaded to determine build number");
+                            if (manifestUrlString.startsWith("jar:")) {
+                                log.warn("Manifest could not be loaded to determine build number");
+                            }
                         }
                     }
                     long existingBuildNumber = -1;

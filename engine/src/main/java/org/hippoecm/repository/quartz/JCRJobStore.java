@@ -519,11 +519,15 @@ public class JCRJobStore implements JobStore {
                     }
                 }
             }
-        } catch(PathNotFoundException ex) {
-            // deliberate ignore
-        } catch(RepositoryException ex) {
-            log.error(ex.getClass().getName()+": "+ex.getMessage(), ex);
-            throw new JobPersistenceException("error while marking job completed", ex);
+        } catch(PathNotFoundException ignored) {
+        } catch(ItemNotFoundException ignored) {
+        } catch(RepositoryException e) {
+            log.error("Error while marking job completed", e);
+            try {
+                getSession(ctxt).refresh(false);
+            } catch (RepositoryException e1) {
+                log.error("Failed to refresh session after failing to mark job completed");
+            }
         }
     }
 
