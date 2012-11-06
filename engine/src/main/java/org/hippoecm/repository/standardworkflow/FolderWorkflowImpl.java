@@ -51,6 +51,7 @@ import javax.jcr.query.QueryManager;
 import javax.jcr.query.QueryResult;
 import javax.jcr.version.VersionException;
 
+import org.apache.jackrabbit.commons.iterator.NodeIterable;
 import org.hippoecm.repository.HippoStdNodeType;
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.HierarchyResolver;
@@ -501,24 +502,14 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
     }
 
     private void renameChildDocument(Node folderNode, String newName) throws RepositoryException {
-        Node documentNode = folderNode.getSession().getRootNode().getNode(folderNode.getPath().substring(1)+"/"+newName);
-        if (documentNode.isNodeType(HippoNodeType.NT_HANDLE)) {
-            for (NodeIterator children = documentNode.getNodes(); children.hasNext(); ) {
-                Node child = children.nextNode();
-                if (child != null) {
-                    if (child.isNodeType(HippoNodeType.NT_DOCUMENT)) {
-                        child.checkout();
-                        folderNode.getSession().move(child.getPath(), documentNode.getPath()+"/"+documentNode.getName());
-                    }
-                }
-            }
-        }
+        Node documentNode = folderNode.getSession().getNode(folderNode.getPath()+"/"+newName);
+        renameChildDocument(documentNode);
     }
 
     private void renameChildDocument(Node documentNode) throws RepositoryException {
         if (documentNode.isNodeType(HippoNodeType.NT_HANDLE)) {
-            for (NodeIterator children = documentNode.getNodes(); children.hasNext(); ) {
-                Node child = children.nextNode();
+            documentNode.checkout();
+            for (Node child : new NodeIterable(documentNode.getNodes())) {
                 if (child != null) {
                     if (child.isNodeType(HippoNodeType.NT_DOCUMENT)) {
                         child.checkout();
