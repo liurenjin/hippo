@@ -298,13 +298,19 @@ public class NodeDecorator extends org.hippoecm.repository.decorating.NodeDecora
         }
         if(localized == null) {
             localized = getLocalized(null);
-            if (localized == null)
+            if (localized == null) {
                 localized = Localized.getInstance();
+            }
         }
         Node bestCandidateNode = null;
         Localized bestCandidate = null;
-        for (NodeIterator iter = node.getNodes(HippoNodeType.HIPPO_TRANSLATION); iter.hasNext(); ) {
-            Node currentCandidateNode = iter.nextNode();
+        for (int i = 1; i < Integer.MAX_VALUE; i++) {
+            Node currentCandidateNode;
+            try {
+                currentCandidateNode = node.getNode(HippoNodeType.HIPPO_TRANSLATION + "[" + i + "]");
+            } catch (PathNotFoundException e) {
+                break;
+            }
             Localized currentCandidate = Localized.getInstance(currentCandidateNode);
             Localized resultCandidate = localized.matches(bestCandidate, currentCandidate);
             if (resultCandidate == currentCandidate) {
@@ -312,8 +318,10 @@ public class NodeDecorator extends org.hippoecm.repository.decorating.NodeDecora
                 bestCandidateNode = currentCandidateNode;
             }
         }
-        if (bestCandidateNode != null && bestCandidateNode.hasProperty(HippoNodeType.HIPPO_MESSAGE)) {
-            return bestCandidateNode.getProperty(HippoNodeType.HIPPO_MESSAGE).getString();
+        if (bestCandidateNode != null) {
+            if (bestCandidateNode.hasProperty(HippoNodeType.HIPPO_MESSAGE)) {
+                return bestCandidateNode.getProperty(HippoNodeType.HIPPO_MESSAGE).getString();
+            }
         }
         return getName();
     }
@@ -358,8 +366,9 @@ public class NodeDecorator extends org.hippoecm.repository.decorating.NodeDecora
             }
         }
         if (localized == null) {
-            if (locale != null)
+            if (locale != null) {
                 localized = Localized.getInstance(locale);
+            }
         } else {
             localized = Localized.getInstance(locale);
         }
