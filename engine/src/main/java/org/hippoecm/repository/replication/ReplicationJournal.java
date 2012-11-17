@@ -121,7 +121,7 @@ public class ReplicationJournal extends FileJournal {
      * {@inheritDoc}
      */
     @Override
-    public void sync() throws JournalException {
+    public void sync(boolean startup) throws JournalException {
         // consumers  synchronize themselves
     }
 
