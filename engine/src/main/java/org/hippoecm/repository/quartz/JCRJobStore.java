@@ -519,8 +519,10 @@ public class JCRJobStore implements JobStore {
                     }
                 }
             }
-        } catch(PathNotFoundException ignored) {
-        } catch(ItemNotFoundException ignored) {
+        } catch(PathNotFoundException e) {
+            log.info("Job or trigger node no longer exists: " + e.getMessage());
+        } catch(ItemNotFoundException e) {
+            log.info("Job or trigger node no longer exists: " + e.getMessage());
         } catch(RepositoryException e) {
             log.error("Error while marking job completed", e);
             try {
