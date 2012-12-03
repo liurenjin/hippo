@@ -27,10 +27,6 @@
   <artifactId>hippo-repository-test</artifactId>
   <packaging>jar</packaging>
 
-  <properties>
-    <repo.config>file:${project.basedir}/src/test/config/mysql/repository.xml</repo.config>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.onehippo.cms7</groupId>
@@ -133,10 +129,6 @@
               <value>${project.build.directory}</value>
             </property>
             <property>
-              <name>repo.config</name>
-              <value>${repo.config}</value>
-            </property>
-            <property>
               <name>org.onehippo.repository.test.keepserver</name>
               <value>true</value>
             </property>
@@ -181,25 +173,6 @@
           <version>${project.version}</version>
           <type>jar</type>
           <classifier>tests</classifier>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>mysql</id>
-      <activation>
-        <property>
-          <name>mysql</name>
-        </property>
-      </activation>
-      <properties>
-        <repo.config>file:${project.basedir}/src/test/config/mysql/repository.xml</repo.config>
-      </properties>
-      <dependencies>
-        <dependency>
-          <groupId>mysql</groupId>
-          <artifactId>mysql-connector-java</artifactId>
-          <version>5.1.18</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
