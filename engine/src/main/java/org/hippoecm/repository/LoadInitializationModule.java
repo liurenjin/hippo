@@ -648,8 +648,8 @@ public class LoadInitializationModule implements DaemonModule, EventListener {
                                     log.error("Illegal Implementation-Build manifest entry '" + buildString + "': must be a number");
                                 }
                             }
-                        } catch (IOException e) {
-                            log.info("Manifest could not be loaded to determine build number");
+                        } catch (IOException ex) {
+                            log.warn("Manifest could not be loaded to determine build number");
                         }
                     }
                     long existingBuildNumber = -1;
