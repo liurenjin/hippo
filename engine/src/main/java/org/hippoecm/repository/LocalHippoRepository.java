@@ -251,6 +251,10 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
         void enableVirtualLayer(boolean enabled) throws RepositoryException {
             isStarted = enabled;
         }
+
+        boolean isClustered() {
+            return getRepositoryConfig().getClusterConfig() != null;
+        }
     }
 
     static private void delete(File path) {
@@ -365,9 +369,9 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             if (hasHippoNamespace) {
                 switch(upgradeFlag) {
                 case TRUE:
-                    ((LocalRepositoryImpl)jackrabbitRepository).enableVirtualLayer(false);
+                    jackrabbitRepository.enableVirtualLayer(false);
                     Session migrateSession = DecoratorFactoryImpl.getSessionDecorator(jcrRootSession.impersonate(new SimpleCredentials("system", new char[] {})));
-                    needsRestart = UpdaterEngine.migrate(migrateSession);
+                    needsRestart = UpdaterEngine.migrate(migrateSession, jackrabbitRepository.isClustered());
                     migrateSession.logout();
                     if (needsRestart) {
                         return;
@@ -408,7 +412,7 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                 }
             }
 
-            ((LocalRepositoryImpl)jackrabbitRepository).enableVirtualLayer(true);
+            jackrabbitRepository.enableVirtualLayer(true);
 
             // After initializing namespaces and nodetypes switch to the decorated session.
             rootSession = DecoratorFactoryImpl.getSessionDecorator(syncSession.impersonate(new SimpleCredentials("system", new char[]{})));
@@ -439,7 +443,7 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
 
             if (!hasHippoNamespace) {
                 Session initializeSession = DecoratorFactoryImpl.getSessionDecorator(jcrRootSession.impersonate(new SimpleCredentials("system", new char[] {})));
-                UpdaterEngine.migrate(initializeSession);
+                UpdaterEngine.migrate(initializeSession, jackrabbitRepository.isClustered());
                 initializeSession.logout();
             }
 
