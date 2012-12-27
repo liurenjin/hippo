@@ -86,8 +86,6 @@ public class RepositoryWorkflowImpl implements RepositoryWorkflow, InternalWorkf
         UpdaterModule updateModelUpdaterModule = new UpdaterModule() {
             public void register(final UpdaterContext context) {
                 context.registerName(module != null ? module.getClass().getName() : getClass().getName());
-                context.registerStartTag(null);
-                context.registerEndTag(null);
                 if (module != null) {
                     module.register(new UpdaterContext() {
                         public void registerName(String name) {
