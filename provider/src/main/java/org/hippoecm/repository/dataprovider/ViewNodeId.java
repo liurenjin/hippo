@@ -122,17 +122,25 @@ public final class ViewNodeId extends MirrorNodeId implements IFilterNodeId {
                 }
 
             }
+
+            if (name.equals(o.name)) {
+                return 0;
+            }
+
+            if (nodeId.parentName == null && o.nodeId.parentName == null) {
+                return 0;
+            }
+
             // document nodes are always ordered before anything else
             // (we make use of the fact that document nodes always have the same name as their handles)
-            if (nodeId.parentName != null && nodeId.parentName.equals(name)) {
+            if ((nodeId.parentName != null && nodeId.parentName.equals(name)) && !(o.nodeId.parentName != null && o.nodeId.parentName.equals(o.name))) {
                 return -1;
             }
-            if (o.nodeId.parentName != null && o.nodeId.parentName.equals(o.name)) {
+            if ((o.nodeId.parentName != null && o.nodeId.parentName.equals(o.name)) && !(nodeId.parentName != null && nodeId.parentName.equals(name))) {
                 return 1;
             }
 
-            // never return 0 (See Comparable api)
-            return -1;
+            return 0;
         }
     }
 
