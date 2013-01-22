@@ -416,7 +416,7 @@ public abstract class UpdaterItemVisitor implements ItemVisitor {
          * @throws javax.jcr.RepositoryException
          */
         public NodeIterator iterator(Session session) throws RepositoryException {
-            Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM "+nodeType, javax.jcr.query.Query.SQL);
+            Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM "+nodeType+" ORDER BY jcr:score", javax.jcr.query.Query.SQL);
             QueryResult result = query.execute();
             return result.getNodes();
         }
