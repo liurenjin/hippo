@@ -20,6 +20,7 @@ import org.hippoecm.repository.standardworkflow.VersionWorkflow;
 import org.junit.Test;
 
 import javax.jcr.Node;
+import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import java.rmi.RemoteException;
 import java.util.*;
@@ -42,6 +43,14 @@ public class VersioningWorkflowTest extends TestCase {
         node.addMixin("hippostd:publishable");
         node.setProperty("hippostd:state", "published");
         session.save();
+
+        if (!session.itemExists("/hippo:configuration/hippo:workflows/versioning")) {
+            final NodeIterator nodes = session.getNode("/hippo:configuration/hippo:workflows").getNodes();
+            System.out.println("Workflow categories:");
+            while (nodes.hasNext()) {
+                System.out.println(nodes.nextNode().getName());
+            }
+        }
 
         WorkflowManager wflMgr = ((HippoWorkspace) session.getWorkspace()).getWorkflowManager();
         VersionWorkflow versionwf = (VersionWorkflow) wflMgr.getWorkflow("versioning", node);
