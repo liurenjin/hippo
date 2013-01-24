@@ -216,13 +216,10 @@ public class WorkflowManagerImpl implements WorkflowManager {
 
     private Node getNodeIfExists(final Node parent, final String category) throws RepositoryException {
         try {
-            final NodeIterator nodes = parent.getNodes(category);
-            if (nodes.hasNext()) {
-                return nodes.nextNode();
-            }
-        } catch (PathNotFoundException ignored) {
+            return parent.getNode(category);
+        } catch (PathNotFoundException e) {
+            return null;
         }
-        return null;
     }
 
     Node getWorkflowNode(String category, Document document, Session session) {
