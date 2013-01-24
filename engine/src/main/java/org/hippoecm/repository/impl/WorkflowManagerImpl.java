@@ -150,7 +150,6 @@ public class WorkflowManagerImpl implements WorkflowManager {
 
             Node node = getNodeIfExists(session.getNodeByIdentifier(configuration), category);
             if (node != null) {
-                node = node.getNode(category);
                 Node workflowNode = null;
                 for (NodeIterator iter = node.getNodes(); iter.hasNext();) {
                     workflowNode = iter.nextNode();
