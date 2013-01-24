@@ -148,8 +148,8 @@ public class WorkflowManagerImpl implements WorkflowManager {
                 rootSession.getNodeByUUID(item.getUUID());
             }
 
-            Node node = session.getNodeByUUID(configuration);
-            if (node.hasNode(category)) {
+            Node node = getNodeIfExists(session.getNodeByIdentifier(configuration), category);
+            if (node != null) {
                 node = node.getNode(category);
                 Node workflowNode = null;
                 for (NodeIterator iter = node.getNodes(); iter.hasNext();) {
@@ -213,6 +213,14 @@ public class WorkflowManagerImpl implements WorkflowManager {
             log.error("generic error accessing workflow definitions "+ex.getClass().getName()+": "+ex.getMessage(), ex);
         }
         return null;
+    }
+
+    private Node getNodeIfExists(final Node parent, final String category) throws RepositoryException {
+        try {
+            return parent.getNode(category);
+        } catch (PathNotFoundException e) {
+            return null;
+        }
     }
 
     Node getWorkflowNode(String category, Document document, Session session) {
