@@ -74,6 +74,10 @@
     <appender-ref ref="console"/>
   </category>
 
+  <category additivity="false" name="org.hippoecm.repository.impl.WorkflowManagerImpl">
+    <level value="debug"/>
+    <appender-ref ref="console"/>
+  </category>
   <category additivity="false" name="org.hippoecm.repository.jackrabbit.HippoVirtualProvider">
     <level value="error"/>
     <appender-ref ref="console"/>
