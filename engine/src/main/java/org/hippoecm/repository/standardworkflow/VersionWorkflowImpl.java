@@ -160,7 +160,7 @@ public class VersionWorkflowImpl extends Document implements VersionWorkflow, In
 
         for (PropertyIterator iter = source.getProperties(); iter.hasNext();) {
             Property prop = iter.nextProperty();
-            if (prop.getName().startsWith("jcr:") ||
+            if (prop.getName().startsWith("jcr:frozen") || prop.getName().startsWith("jcr:uuid") ||
                 prop.getName().equals(HippoNodeType.HIPPO_RELATED) ||
                 prop.getName().equals(HippoNodeType.HIPPO_COMPUTE) ||
                 prop.getName().equals(HippoNodeType.HIPPO_PATHS)) {
