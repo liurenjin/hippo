@@ -93,6 +93,11 @@ public class EventLoggerImpl implements WorkflowEventLoggerWorkflow, InternalWor
         addLogNode(who, className, methodName, documentPath, returnType, returnValue, arguments);
     }
 
+    @Override
+    public void logWorkflowStep(final String who, final String className, final String methodName, final Object[] args, final Object returnObject, final String documentPath, final String interaction, final String interactionId, final String category, final String workflowName) {
+        logWorkflowStep(who, className, methodName, args, returnObject, documentPath);
+    }
+
     private String getReturnValue(Object returnObject) {
         if (returnObject != null) {
             if (returnObject instanceof Document) {

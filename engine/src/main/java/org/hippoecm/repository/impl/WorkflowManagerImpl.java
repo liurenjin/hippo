@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.Vector;
 
 import javax.jcr.AccessDeniedException;
@@ -82,6 +83,9 @@ public class WorkflowManagerImpl implements WorkflowManager {
     private static final String SVN_ID = "$Id$";
 
     static final Logger log = LoggerFactory.getLogger(WorkflowManagerImpl.class);
+
+    private static final ThreadLocal<String> INTERACTION_ID = new ThreadLocal<String>();
+    private static final ThreadLocal<String> INTERACTION = new ThreadLocal<String>();
 
     /** Session from which this WorkflowManager instance was created.  Is used
      * to look-up which workflows are active for a user.  It is however not
@@ -409,6 +413,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
         if (workflowNode != null) {
             try {
                 Node types = workflowNode.getNode(HippoNodeType.HIPPO_TYPES);
+                String workflowName = workflowNode.getName();
                 final Workflow workflow = getRealWorkflow(item, workflowNode);
                 if (workflow != null) {
                     boolean objectPersist = !InternalWorkflow.class.isInstance(workflow);
@@ -422,7 +427,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
                         }
                     }
                     interfaces = (Class[])vector.toArray(new Class[vector.size()]);
-                    InvocationHandler handler = new WorkflowInvocationHandler(category, workflow, uuid, path, types, objectPersist);
+                    InvocationHandler handler = new WorkflowInvocationHandler(category, workflowName, workflow, uuid, path, types, objectPersist);
                     Class proxyClass = Proxy.getProxyClass(workflow.getClass().getClassLoader(), interfaces);
                     return (Workflow)proxyClass.getConstructor(new Class[] {InvocationHandler.class}).
                             newInstance(new Object[]{handler});
@@ -508,6 +513,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
     Workflow getWorkflowInternal(Node workflowNode, Node item) throws RepositoryException {
         try {
             String category = workflowNode.getParent().getName();
+            String workflowName = workflowNode.getName();
             String classname = workflowNode.getProperty(HippoNodeType.HIPPO_CLASSNAME).getString();
             Node types = workflowNode.getNode(HippoNodeType.HIPPO_TYPES);
 
@@ -536,7 +542,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
                         }
                     }
                     interfaces = (Class[])vector.toArray(new Class[vector.size()]);
-                    InvocationHandler handler = new WorkflowInvocationHandler(category, workflow, uuid, path, types, objectPersist);
+                    InvocationHandler handler = new WorkflowInvocationHandler(category, workflowName, workflow, uuid, path, types, objectPersist);
                     Class proxyClass = Proxy.getProxyClass(workflow.getClass().getClassLoader(), interfaces);
                     workflow = (Workflow)proxyClass.getConstructor(new Class[] {InvocationHandler.class}).
                             newInstance(new Object[] {handler});
@@ -590,14 +596,16 @@ public class WorkflowManagerImpl implements WorkflowManager {
 
     class WorkflowInvocationHandler implements InvocationHandler {
         String category;
+        String workflowName;
         Workflow upstream;
         String uuid;
         Node types;
         String path;
         boolean objectPersist;
 
-        WorkflowInvocationHandler(String category, Workflow upstream, String uuid, String path, Node types, boolean objectPersist) {
+        WorkflowInvocationHandler(String category, String workflowName, Workflow upstream, String uuid, String path, Node types, boolean objectPersist) {
             this.category = category;
+            this.workflowName = workflowName;
             this.upstream = upstream;
             this.uuid = uuid;
             this.path = path;
@@ -617,7 +625,18 @@ public class WorkflowManagerImpl implements WorkflowManager {
 
             WorkflowPostActions postActions = null;
             Node lockable = null;
+            boolean resetInteraction = false;
             try {
+                String interactionId = INTERACTION_ID.get();
+                String interaction = INTERACTION.get();
+                if (interactionId == null) {
+                    interactionId = UUID.randomUUID().toString();
+                    INTERACTION_ID.set(interactionId);
+                    interaction = category + ":" + workflowName + ":" + method.getName();
+                    INTERACTION.set(interaction);
+                    resetInteraction = true;
+                }
+
                 targetMethod = upstream.getClass().getMethod(method.getName(), method.getParameterTypes());
                 synchronized (SessionDecorator.unwrap(rootSession)) {
                     postActions = WorkflowPostActionsImpl.createPostActions(WorkflowManagerImpl.this, category, targetMethod, uuid);
@@ -683,7 +702,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
                     }
                     if (!targetMethod.getName().equals("hints")) {
                         eventLoggerWorkflow.logWorkflowStep(session.getUserID(), upstream.getClass().getName(),
-                                targetMethod.getName(), args, returnObject, path);
+                                targetMethod.getName(), args, returnObject, path, interaction, interactionId, category, workflowName);
                     }
                     if (postActions != null) {
                         postActions.execute(returnObject);
@@ -714,6 +733,10 @@ public class WorkflowManagerImpl implements WorkflowManager {
                 log.info(ex.getClass().getName()+": "+ex.getMessage(), ex);
                 throw returnException = ex.getCause();
             } finally {
+                if (resetInteraction) {
+                    INTERACTION.remove();
+                    INTERACTION_ID.remove();
+                }
                 if (postActions != null) {
                     postActions.dispose();
                 }
@@ -788,8 +811,11 @@ public class WorkflowManagerImpl implements WorkflowManager {
         Method method;
         Object[] arguments;
         String category = null;
+        String workflowName = null;
         String methodName = null;
         Class[] parameterTypes = null;
+        String interactionId;
+        String interaction;
 
         public WorkflowInvocationImpl() {
             workflowNode = null;
@@ -800,6 +826,8 @@ public class WorkflowManagerImpl implements WorkflowManager {
             category = null;
             methodName = null;
             parameterTypes = null;
+            interactionId = null;
+            interaction = null;
         }
 
         WorkflowInvocationImpl(WorkflowManager workflowManager, Node workflowNode, Session rootSession, Document workflowSubject, Method method, Object[] args) throws RepositoryException {
@@ -819,6 +847,8 @@ public class WorkflowManagerImpl implements WorkflowManager {
             this.category = workflowNode.getParent().getName();
             this.methodName = method.getName();
             this.parameterTypes = method.getParameterTypes();
+            this.interactionId = WorkflowManagerImpl.INTERACTION_ID.get();
+            this.interaction = WorkflowManagerImpl.INTERACTION.get();
         }
 
         WorkflowInvocationImpl(WorkflowManager workflowManager, Node workflowNode, Session rootSession, Node workflowSubject, Method method, Object[] args) throws RepositoryException {
@@ -831,10 +861,13 @@ public class WorkflowManagerImpl implements WorkflowManager {
             this.category = workflowNode.getParent().getName();
             this.methodName = method.getName();
             this.parameterTypes = method.getParameterTypes();
+            this.interactionId = WorkflowManagerImpl.INTERACTION_ID.get();
+            this.interaction = WorkflowManagerImpl.INTERACTION.get();
         }
 
         public void readExternal(ObjectInput input) throws IOException, ClassNotFoundException {
             category = (String) input.readObject();
+            workflowName = (String) input.readObject();
             String uuid = (String) input.readObject();
             workflowSubject = new Document(uuid);
             String className = (String) input.readObject();
@@ -845,11 +878,14 @@ public class WorkflowManagerImpl implements WorkflowManager {
                 parameterTypes[i] = Class.forName((String)input.readObject());
             }
             arguments = (Object[]) input.readObject();
+            interactionId = (String) input.readObject();
+            interaction = (String) input.readObject();
         }
 
         public void writeExternal(ObjectOutput output) throws IOException {
             try {
-                output.writeObject(workflowNode.getParent().getName());
+                output.writeObject(category);
+                output.writeObject(workflowName);
                 output.writeObject(workflowSubjectNode.getUUID());
                 output.writeObject(method.getClass().getName());
                 output.writeObject(method.getName());
@@ -859,6 +895,8 @@ public class WorkflowManagerImpl implements WorkflowManager {
                     output.writeObject(parameterTypes[i]);
                 }
                 output.writeObject(arguments);
+                output.writeObject(interactionId);
+                output.writeObject(interaction);
             } catch(RepositoryException ex) {
                 log.debug("not serializable", ex);
                 throw new IOException("not serializable");
@@ -898,9 +936,15 @@ public class WorkflowManagerImpl implements WorkflowManager {
                     }
                 }
             }
+            boolean resetInteractionId = false;
             try {
-                Object returnObject = method.invoke(workflow, arguments);
-                return returnObject;
+                if (WorkflowManagerImpl.INTERACTION_ID.get() == null && interactionId != null) {
+                    WorkflowManagerImpl.INTERACTION_ID.set(interactionId);
+                    WorkflowManagerImpl.INTERACTION.set(interaction);
+                    resetInteractionId = true;
+                }
+
+                return method.invoke(workflow, arguments);
             } catch(IllegalAccessException ex) {
                 log.debug(ex.getMessage(), ex);
                 throw new RepositoryException(ex.getMessage(), ex);
@@ -919,6 +963,11 @@ public class WorkflowManagerImpl implements WorkflowManager {
                     log.debug(ex.getMessage(), ex);
                     throw new RepositoryException(ex.getMessage(), ex);
                 }
+            } finally {
+                if (resetInteractionId) {
+                    WorkflowManagerImpl.INTERACTION_ID.remove();
+                    WorkflowManagerImpl.INTERACTION.remove();
+                }
             }
         }
 
@@ -935,6 +984,8 @@ public class WorkflowManagerImpl implements WorkflowManager {
                     item = manager.rootSession.getNodeByUUID(workflowSubject.getIdentity());
                 }
                 String uuid = item.getIdentifier();
+                String path = item.getPath();
+                String userId = item.getSession().getUserID();
                 boolean objectPersist;
                 postActions = WorkflowPostActionsImpl.createPostActions(manager, category, method, item.getIdentifier());
                 try {
@@ -1011,6 +1062,11 @@ public class WorkflowManagerImpl implements WorkflowManager {
                     if (objectPersist && !targetMethod.getName().equals("hints")) {
                         manager.documentManager.putObject(uuid, types, workflow);
                         manager.rootSession.save();
+                    }
+                    if (!targetMethod.getName().equals("hints")) {
+                        manager.eventLoggerWorkflow.logWorkflowStep(userId, workflow.getClass().getName(),
+                                targetMethod.getName(), arguments, returnObject, path, interaction, interactionId,
+                                category, workflowName);
                     }
                     if (postActions != null) {
                         postActions.execute(returnObject);
