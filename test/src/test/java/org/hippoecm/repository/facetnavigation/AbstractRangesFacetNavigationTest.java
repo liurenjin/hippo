@@ -1,5 +1,5 @@
 /*
- *  Copyright 2010 Hippo.
+ *  Copyright 2010-2013 Hippo.
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.version.VersionException;
 
 import org.hippoecm.repository.TestCase;
-import org.hippoecm.repository.query.lucene.HippoDateTools;
+import org.hippoecm.repository.util.DateTools;
 
 public abstract class AbstractRangesFacetNavigationTest extends TestCase {
     @SuppressWarnings("unused")
@@ -48,7 +48,7 @@ public abstract class AbstractRangesFacetNavigationTest extends TestCase {
        // get next day
        noon.add(Calendar.DAY_OF_YEAR, 1);
        //
-       long timeMillisSecAtNoon = HippoDateTools.round(noon.getTimeInMillis(), HippoDateTools.Resolution.DAY);
+       long timeMillisSecAtNoon = DateTools.round(noon.getTimeInMillis(), DateTools.Resolution.DAY);
        noon.setTimeInMillis(timeMillisSecAtNoon);
 
        // 300.000 millesec = 5 min

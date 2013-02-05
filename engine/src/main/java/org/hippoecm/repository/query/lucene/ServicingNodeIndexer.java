@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008 Hippo.
+ *  Copyright 2008-2013 Hippo.
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,18 +23,15 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.NamespaceException;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-import javax.jcr.Value;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.Parser;
 import org.apache.jackrabbit.core.id.PropertyId;
 import org.apache.jackrabbit.core.query.QueryHandlerContext;
 import org.apache.jackrabbit.core.query.lucene.DoubleField;
@@ -52,7 +49,9 @@ import org.apache.jackrabbit.spi.Name;
 import org.apache.jackrabbit.spi.commons.name.NameConstants;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.tika.parser.Parser;
 import org.hippoecm.repository.api.HippoNodeType;
+import org.hippoecm.repository.util.DateTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -269,7 +268,6 @@ public class ServicingNodeIndexer extends NodeIndexer {
         }
     }
 
-
     private void indexNodeName(Document doc, String localName) {
         // simple String
         String hippo_ns_prefix = null;
@@ -354,6 +352,18 @@ public class ServicingNodeIndexer extends NodeIndexer {
     }
 
     @Override
+    protected void addCalendarValue(Document doc, String fieldName, Calendar internalValue) {
+        super.addCalendarValue(doc, fieldName, internalValue);
+
+        final long timeInMillis = internalValue.getTimeInMillis();
+        for (DateTools.Resolution resolution : DateTools.getSupportedQueryResolutions()) {
+            String propertyNameForResolution = DateTools.getPropertyForResolution(fieldName, resolution);
+            Calendar roundedForResolution = DateTools.roundDate(timeInMillis, resolution);
+            super.addCalendarValue(doc, propertyNameForResolution, roundedForResolution);
+        }
+    }
+
+    @Override
     protected void addStringValue(Document doc, String fieldName, String internalValue, boolean tokenized,
             boolean includeInNodeIndex, float boost, boolean useInExcerpt) {
         if (!addedAllExcludeFieldNames) {
@@ -421,20 +431,20 @@ public class ServicingNodeIndexer extends NodeIndexer {
                 Field.TermVector.NO));
         
         Map<String, String> resolutions = new HashMap<String, String>();
-        resolutions.put("year", HippoDateTools.timeToString(calendar.getTimeInMillis(),
-                HippoDateTools.Resolution.YEAR));
-        resolutions.put("month", HippoDateTools.timeToString(calendar.getTimeInMillis(),
-                HippoDateTools.Resolution.MONTH));
-        resolutions.put("week", HippoDateTools.timeToString(calendar.getTimeInMillis(),
-                HippoDateTools.Resolution.WEEK));
-        resolutions.put("day", HippoDateTools.timeToString(calendar.getTimeInMillis(),
-                HippoDateTools.Resolution.DAY));
-        resolutions.put("hour", HippoDateTools.timeToString(calendar.getTimeInMillis(),
-                HippoDateTools.Resolution.HOUR));
-        resolutions.put("minute", HippoDateTools.timeToString(calendar.getTimeInMillis(),
-                HippoDateTools.Resolution.MINUTE));
-        resolutions.put("second", HippoDateTools.timeToString(calendar.getTimeInMillis(),
-                HippoDateTools.Resolution.SECOND));
+        resolutions.put("year", DateTools.timeToString(calendar.getTimeInMillis(),
+                DateTools.Resolution.YEAR));
+        resolutions.put("month", DateTools.timeToString(calendar.getTimeInMillis(),
+                DateTools.Resolution.MONTH));
+        resolutions.put("week", DateTools.timeToString(calendar.getTimeInMillis(),
+                DateTools.Resolution.WEEK));
+        resolutions.put("day", DateTools.timeToString(calendar.getTimeInMillis(),
+                DateTools.Resolution.DAY));
+        resolutions.put("hour", DateTools.timeToString(calendar.getTimeInMillis(),
+                DateTools.Resolution.HOUR));
+        resolutions.put("minute", DateTools.timeToString(calendar.getTimeInMillis(),
+                DateTools.Resolution.MINUTE));
+        resolutions.put("second", DateTools.timeToString(calendar.getTimeInMillis(),
+                DateTools.Resolution.SECOND));
 
         Map<String, Integer> byDateNumbers = new HashMap<String, Integer>();
         byDateNumbers.put("year", calendar.get(Calendar.YEAR));

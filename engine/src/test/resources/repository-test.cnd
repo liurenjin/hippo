@@ -80,7 +80,8 @@
 
 [hippo:testsearchdocument] > hippo:document
 + * (hippo:testcompoundstructure) = hippo:testcompoundstructure multiple
-- * 
+- * (date)
+- * (string)
 
 [test:target] > hippo:document
 

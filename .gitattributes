@@ -116,7 +116,6 @@ engine/src/main/java/org/hippoecm/repository/quartz/CronSchedulerInvocationModul
 engine/src/main/java/org/hippoecm/repository/query/lucene/AuthorizedOnlyIndexReader.java svneol=native#text/plain
 engine/src/main/java/org/hippoecm/repository/query/lucene/FacetFiltersQuery.java svneol=native#text/plain
 engine/src/main/java/org/hippoecm/repository/query/lucene/FacetRangeQuery.java svneol=native#text/plain
-engine/src/main/java/org/hippoecm/repository/query/lucene/HippoDateTools.java svneol=native#text/plain
 engine/src/main/java/org/hippoecm/repository/query/lucene/InheritedFilterQuery.java svneol=native#text/plain
 engine/src/main/java/org/hippoecm/repository/query/lucene/QueryHelper.java svneol=native#text/plain
 engine/src/main/java/org/hippoecm/repository/query/lucene/RangeFields.java svneol=native#text/plain
@@ -167,6 +166,7 @@ engine/src/test/java/org/hippoecm/repository/ExportCndTest.java svneol=native#te
 engine/src/test/java/org/hippoecm/repository/FreeTextSearchTest.java svneol=native#text/plain
 engine/src/test/java/org/hippoecm/repository/OrderByNodeNameTest.java svneol=native#text/plain
 engine/src/test/java/org/hippoecm/repository/PdfExtractionAndIndexingTest.java svneol=native#text/plain
+engine/src/test/java/org/hippoecm/repository/SearchDateRangeTest.java -text
 engine/src/test/java/org/hippoecm/repository/SearchOnNodeNameTest.java svneol=native#text/plain
 engine/src/test/java/org/hippoecm/repository/StandardHippoAnalyzerTest.java svneol=native#text/plain
 engine/src/test/java/org/hippoecm/repository/jackrabbit/xml/DereferencedExportTest.java -text
@@ -319,6 +319,7 @@ upgrade/src/main/java/org/hippoecm/repository/upgrade/Upgrader18a.java svneol=na
 upgrade/src/main/java/org/hippoecm/repository/upgrade/Upgrader19a.java svneol=native#text/plain
 upgrade/src/main/resources/hipposysedit_1_1.cnd -text
 utilities/pom.xml svneol=native#text/plain
+utilities/src/main/java/org/hippoecm/repository/util/DateTools.java svneol=native#text/plain
 utilities/src/main/java/org/hippoecm/repository/util/Utilities.java -text
 wfdropbox/pom.xml svneol=native#text/plain
 wfdropbox/src/main/resources/hippoecm-extension.xml svneol=native#text/plain
