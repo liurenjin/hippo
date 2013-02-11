@@ -875,7 +875,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
             int length = input.readInt();
             parameterTypes = new Class[length];
             for(int i=0; i<length; i++) {
-                parameterTypes[i] = Class.forName((String)input.readObject());
+                parameterTypes[i] = (Class) input.readObject();
             }
             arguments = (Object[]) input.readObject();
             interactionId = (String) input.readObject();
