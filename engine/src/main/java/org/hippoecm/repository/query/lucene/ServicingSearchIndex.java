@@ -79,6 +79,8 @@ public class ServicingSearchIndex extends SearchIndex {
      */
     private Element indexingConfiguration;
 
+    private boolean servicingConsistencyCheckEnabled;
+
     /**
      * Simple zero argument constructor.
      */
@@ -211,6 +213,21 @@ public class ServicingSearchIndex extends SearchIndex {
             log.warn("Exception parsing " + this.getIndexingConfiguration(), e);
         }
         return indexingConfiguration;
+    }
+
+    @Override
+    public void setForceConsistencyCheck(final boolean b) {
+        super.setForceConsistencyCheck(false);
+    }
+
+    public boolean getServicingConsistencyCheckEnabled() {
+        return servicingConsistencyCheckEnabled;
+    }
+
+    @Override
+    public void setEnableConsistencyCheck(final boolean b) {
+        super.setEnableConsistencyCheck(false);
+        servicingConsistencyCheckEnabled = b;
     }
 
     @Override

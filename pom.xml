@@ -87,7 +87,8 @@
     <lucene.version>2.2.0</lucene.version>
     <nekohtml.version>1.9.13</nekohtml.version>
     <jetty.version>6.1.22</jetty.version>
-    <jackrabbit.version>2.2.13-h6</jackrabbit.version>
+    <jackrabbit.patched.version>2.2.13-h8</jackrabbit.patched.version>
+    <jackrabbit.version>2.2.13</jackrabbit.version>
     <quartz.version>1.8.4</quartz.version>
     <json-lib.version>2.2.2</json-lib.version>
     <dom4j.version>1.6.1</dom4j.version>
@@ -231,24 +232,28 @@
       </dependency>
       <dependency>
         <groupId>org.apache.jackrabbit</groupId>
-        <artifactId>jackrabbit-text-extractors</artifactId>
-        <version>${jackrabbit.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.jackrabbit</groupId>
         <artifactId>jackrabbit-jcr-rmi</artifactId>
         <version>${jackrabbit.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.jackrabbit</groupId>
-        <artifactId>jackrabbit-core</artifactId>
+        <artifactId>jackrabbit-jcr2spi</artifactId>
         <version>${jackrabbit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.jackrabbit</groupId>
+        <artifactId>jackrabbit-spi2jcr</artifactId>
+        <version>${jackrabbit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.jackrabbit</groupId>
+        <artifactId>jackrabbit-core</artifactId>
+        <version>${jackrabbit.patched.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.jackrabbit</groupId>
+        <artifactId>jackrabbit-spi-commons</artifactId>
+        <version>${jackrabbit.patched.version}</version>
       </dependency>
      <dependency>
         <groupId>org.datanucleus</groupId>
@@ -447,18 +452,6 @@
         <groupId>com.atomikos</groupId>
         <artifactId>atomikos-util</artifactId>
         <version>${atomikos.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.openqa.selenium.client-drivers</groupId>
-        <artifactId>selenium-java-client-driver</artifactId>
-        <version>${selenium.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.easymock</groupId>
-        <artifactId>easymockclassextension</artifactId>
-        <version>${easymock.version}</version>
-        <scope>test</scope>
       </dependency>
 
     </dependencies>
