@@ -76,7 +76,7 @@ public class SearchDateRangeTest extends TestCase {
         withNoResolution.setLimit(limit);
         final Node firstResultNoResolution = withNoResolution.execute().getNodes().nextNode();
 
-        for (DateTools.Resolution resolution : DateTools.getSupportedQueryResolutions()){
+        for (DateTools.Resolution resolution : DateTools.getSupportedDateResolutions()){
             String dateResolutionStart = DateTools.createXPathConstraint(session, calStart, resolution);
             String dateResolutionEnd = DateTools.createXPathConstraint(session, calStart, resolution);
             String lastModifiedPropertyForResolution = DateTools.getPropertyForResolution("hippo:lastModified", resolution);
@@ -137,7 +137,7 @@ public class SearchDateRangeTest extends TestCase {
         calToday.set(Calendar.HOUR, 8);
         createDocumentsWithUniqueLastModified(nrDocsToday, calToday, Calendar.SECOND);
 
-        for (DateTools.Resolution resolution : DateTools.getSupportedQueryResolutions()){
+        for (DateTools.Resolution resolution : DateTools.getSupportedDateResolutions()){
             String dateWithResolution = DateTools.createXPathConstraint(session, calToday, resolution);
             String lastModifiedPropertyForResolution = DateTools.getPropertyForResolution("hippo:lastModified", resolution);
             String xpathWithResolution = "//element(*,"+NT_SEARCHDOCUMENT+")[@"+lastModifiedPropertyForResolution+" = " + dateWithResolution +"] order by @hippo:lastModified ascending";
