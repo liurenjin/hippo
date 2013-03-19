@@ -18,13 +18,18 @@ package org.hippoecm.repository;
 import java.security.AccessControlException;
 
 import javax.jcr.AccessDeniedException;
+import javax.jcr.ItemVisitor;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
+import javax.jcr.Property;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.Value;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
+import javax.jcr.query.Row;
+import javax.jcr.query.RowIterator;
 import javax.jcr.security.Privilege;
 
 import org.hippoecm.repository.api.HippoNode;
@@ -896,18 +901,6 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
     }
 
     @Test
-    public void testQuerySQL2() throws RepositoryException {
-        QueryManager queryManager = userSession.getWorkspace().getQueryManager();
-        // XPath doesn't like the query from the root
-        Query query = queryManager.createQuery("SELECT * FROM [hippo:ntunstructured]", Query.JCR_SQL2);
-        NodeIterator iter = query.execute().getNodes();
-        assertEquals(10L, iter.getSize());
-
-        // The getTotalSize method is not implemented for QOM-based queries, so it will return -1
-        //assertEquals(12L, ((HippoNodeIterator) iter).getTotalSize());
-    }
-
-    @Test
     public void testQueryWithNodenameFilter() throws RepositoryException {
         Node testData = session.getRootNode().getNode(TEST_DATA_NODE);
         testData.getNode("readdoc0").addNode("readable", "hippo:ntunstructured");
@@ -1002,6 +995,21 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
         // Nodes 'nothing0/subread' and 'nothing0/subwrite' are counted but not instantiated.
         // The hierarchical constraint (can read parent) is not taken into account.
         assertEquals(12L, ((HippoNodeIterator) iter).getTotalSize());
+    }
+
+    @Test
+    public void testQuerySQL2() throws RepositoryException {
+
+        final QueryManager queryManager = userSession.getWorkspace().getQueryManager();
+        Query query = queryManager.createQuery("SELECT * FROM [hippo:ntunstructured]", Query.JCR_SQL2);
+        NodeIterator iter = query.execute().getNodes();
+        assertEquals(10L, iter.getSize());
+
+        query = queryManager.createQuery("SELECT child.[jcr:uuid] AS identifier FROM [hippo:harddocument] AS child " +
+                "INNER JOIN [hippo:ntunstructured] AS parent ON ISCHILDNODE(child,parent)", Query.JCR_SQL2);
+        RowIterator rows = query.execute().getRows();
+        assertEquals(7L, rows.getSize());
+
     }
 
     @Test
