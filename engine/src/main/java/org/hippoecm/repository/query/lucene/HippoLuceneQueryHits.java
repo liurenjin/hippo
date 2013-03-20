@@ -61,14 +61,7 @@ public class HippoLuceneQueryHits implements QueryHits {
      * {@inheritDoc}
      */
     public ScoreNode nextScoreNode() throws IOException {
-        if (!scorer.next()) {
-            return null;
-        }
-        /**
-         * find next match, code verbally copied from
-         {@link IndexSearcher#search(Query, Filter, HitCollector)}
-         */
-        boolean more = filter.next() && scorer.skipTo(filter.doc());
+        boolean more = filter.next() && scorer.next();
         while (more) {
             int filterDocId = filter.doc();
             if (filterDocId > scorer.doc() && !scorer.skipTo(filterDocId)) {
