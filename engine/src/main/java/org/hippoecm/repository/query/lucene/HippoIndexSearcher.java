@@ -24,13 +24,8 @@ import org.apache.jackrabbit.core.query.lucene.LuceneQueryHits;
 import org.apache.jackrabbit.core.query.lucene.QueryHits;
 import org.apache.jackrabbit.core.state.ItemStateManager;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.Weight;
 
 public class HippoIndexSearcher extends JackrabbitIndexSearcher {
 
@@ -61,38 +56,6 @@ public class HippoIndexSearcher extends JackrabbitIndexSearcher {
             }
         }
         return hits;
-    }
-
-    @Override
-    public void search(Weight weight, Filter filter,
-                       final HitCollector results) throws IOException {
-
-        Scorer scorer = weight.scorer(reader);
-        if (scorer == null)
-            return;
-
-        if (filter == null) {
-            scorer.score(results);
-            return;
-        }
-
-        DocIdSetIterator filterDocIdIterator = filter.getDocIdSet(reader).iterator();
-        
-        boolean more = filterDocIdIterator.next() && scorer.next();
-        while (more) {
-            int filterDocId = filterDocIdIterator.doc();
-            if (filterDocId > scorer.doc() && !scorer.skipTo(filterDocId)) {
-                more = false;
-            } else {
-                int scorerDocId = scorer.doc();
-                if (scorerDocId == filterDocId) { // permitted by filter
-                    results.collect(scorerDocId, scorer.score());
-                    more = filterDocIdIterator.next();
-                } else {
-                    more = filterDocIdIterator.skipTo(scorerDocId);
-                }
-            }
-        }
     }
 
 }
