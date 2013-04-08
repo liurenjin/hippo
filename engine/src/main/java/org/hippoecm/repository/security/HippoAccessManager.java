@@ -408,10 +408,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
         return isGranted(p, permissions);
     }
 
-    /**
-     * @see AccessManager#canRead(Path)
-     */
-    public boolean canRead(Path absPath) throws RepositoryException {
+    private boolean canRead(Path absPath) throws RepositoryException {
         checkInitialized();
 
         // allow everything to the system user
@@ -422,7 +419,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
         // find the id
         NodeId id = getNodeId(absPath);
         if (id == null) {
-            // this usually happens in clustered environments when the node has been 
+            // this usually happens in clustered environments when the node has been
             // deleted before the cluster addnode event is received.
             log.debug("Unable to find node id, allowing read permissions: {}", absPath);
             return true;
@@ -485,9 +482,10 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
         }
 
         // make sure all parent nodes are readable
-        if (!rootNodeId.equals(id)) {
+        // if node is not readable because of parent, don't cache as we can't invalidate
+        if (!rootNodeId.equals(id) && !(id instanceof HippoNodeId)) {
             if (!canRead(nodeState.getParentId())) {
-                addAccessToCache(id, false);
+                removeAccessFromCache(id);
                 return false;
             }
         }

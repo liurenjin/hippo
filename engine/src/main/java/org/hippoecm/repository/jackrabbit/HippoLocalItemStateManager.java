@@ -70,6 +70,7 @@ import org.hippoecm.repository.dataprovider.HippoNodeId;
 import org.hippoecm.repository.dataprovider.HippoVirtualProvider;
 import org.hippoecm.repository.dataprovider.ParameterizedNodeId;
 import org.hippoecm.repository.dataprovider.StateProviderContext;
+import org.hippoecm.repository.security.HippoAccessManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -493,7 +494,6 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
         List<ChildNodeEntry> cnes = state.getChildNodeEntries();
         LinkedList<ChildNodeEntry> updatedList = new LinkedList<ChildNodeEntry>();
         int readableIndex = 0;
-        boolean hasUpdate = false;
         for (ChildNodeEntry current : cnes) {
             boolean added = false;
 
@@ -507,7 +507,6 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
                     if (!accessManager.isGranted(current.getId(), AccessManager.READ)) {
                         updatedList.addLast(current);
                         added = true;
-                        hasUpdate = true;
                     }
                 } catch (ItemNotFoundException t) {
                     log.error("Unable to order documents below handle " + state.getId(), t);
@@ -521,9 +520,10 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
                 readableIndex++;
             }
         }
-        if (hasUpdate) {
-            state.setChildNodeEntries(updatedList);
-        }
+
+        // always invoke {@link NodeState#setChildNodeEntries} (even when there are no changes)
+        // so that the hierarchy manager cache is verified and updated.
+        state.setChildNodeEntries(updatedList);
     }
 
     @Override
@@ -957,10 +957,31 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
     }
 
     @Override
-    public void handleModified(final NodeId handleId) {
-        ItemState state = cache.retrieve(handleId);
-        if (state != null && isHandle(state)) {
-            reorderHandleChildNodeEntries((NodeState) state);
+    public void handleModified(final NodeState sharedState) {
+        NodeId handleId = sharedState.getNodeId();
+        ItemState localState = cache.retrieve(handleId);
+        if (localState != null) {
+            reorderHandleChildNodeEntries((NodeState) localState);
+        } else {
+            clearHierarchyManagerCacheForHandle(sharedState);
+        }
+    }
+
+    private void clearHierarchyManagerCacheForHandle(final NodeState sharedState) {
+        final NodeId handleId = sharedState.getNodeId();
+        final Name nodeTypeName = sharedState.getNodeTypeName();
+        final NodeId parentId = sharedState.getParentId();
+        NodeState wrappedState = new NodeState(handleId, nodeTypeName, parentId, ItemState.STATUS_EXISTING, false);
+        nodesReplaced(wrappedState);
+    }
+
+    @Override
+    public void stateModified(final ItemState modified) {
+        super.stateModified(modified);
+        if (accessManager != null
+                && modified.getContainer() != this
+                && !cache.isCached(modified.getId())) {
+            ((HippoAccessManager) accessManager).stateModified(modified);
         }
     }
 

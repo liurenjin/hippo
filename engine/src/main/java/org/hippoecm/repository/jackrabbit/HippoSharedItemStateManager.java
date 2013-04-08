@@ -17,8 +17,10 @@ package org.hippoecm.repository.jackrabbit;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.jcr.NamespaceException;
@@ -39,6 +41,7 @@ import org.apache.jackrabbit.core.observation.EventStateCollection;
 import org.apache.jackrabbit.core.observation.EventStateCollectionFactory;
 import org.apache.jackrabbit.core.persistence.PersistenceManager;
 import org.apache.jackrabbit.core.state.ChangeLog;
+import org.apache.jackrabbit.core.state.ChildNodeEntry;
 import org.apache.jackrabbit.core.state.ISMLocking;
 import org.apache.jackrabbit.core.state.ItemState;
 import org.apache.jackrabbit.core.state.ItemStateCacheFactory;
@@ -111,11 +114,11 @@ public class HippoSharedItemStateManager extends SharedItemStateManager {
         }
 
         try {
-            Set<NodeId> handles = new HashSet<NodeId>();
-            addHandleIds(changeLog.modifiedStates(), changeLog, handles);
-            for (NodeId handleId : handles) {
+            Set<NodeState> handles = new HashSet<NodeState>();
+            addHandles(changeLog.modifiedStates(), changeLog, handles);
+            for (NodeState handleState : handles) {
                 for (HandleListener listener : new ArrayList<HandleListener>(handleListeners)) {
-                    listener.handleModified(handleId);
+                    listener.handleModified(handleState);
                 }
             }
         } catch (ItemStateException e) {
@@ -123,7 +126,7 @@ public class HippoSharedItemStateManager extends SharedItemStateManager {
         }
     }
 
-    private void addHandleIds(final Iterable<ItemState> states, ChangeLog changes, final Set<NodeId> handles) throws ItemStateException {
+    private void addHandles(final Iterable<ItemState> states, ChangeLog changes, final Set<NodeState> handles) throws ItemStateException {
         for (ItemState state : states) {
             try {
                 final NodeState nodeState;
@@ -143,14 +146,14 @@ public class HippoSharedItemStateManager extends SharedItemStateManager {
                     continue;
                 }
                 if (handleNodeName.equals(nodeTypeName)) {
-                    handles.add(nodeState.getNodeId());
+                    handles.add(nodeState);
                 } else {
                     final EffectiveNodeType ent = nodeTypeRegistry.getEffectiveNodeType(nodeTypeName);
                     if (ent.includesNodeType(documentNodeName)) {
                         final NodeState parentState = (NodeState) getItemState(nodeState.getParentId());
                         final Name parentNodeTypeName = parentState.getNodeTypeName();
                         if (parentNodeTypeName != null && handleNodeName.equals(parentNodeTypeName)) {
-                            handles.add(nodeState.getParentId());
+                            handles.add(parentState);
                         } else {
                             log.debug("Skipping {}, Id: '{}'", parentNodeTypeName.toString(), parentState.getNodeId());
                         }
