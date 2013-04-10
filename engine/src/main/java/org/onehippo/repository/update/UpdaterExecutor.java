@@ -31,6 +31,7 @@ import javax.jcr.PathNotFoundException;
 import javax.jcr.Property;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.SimpleCredentials;
 import javax.jcr.ValueFactory;
 import javax.jcr.observation.Event;
 import javax.jcr.observation.EventIterator;
@@ -62,12 +63,14 @@ public class UpdaterExecutor implements EventListener {
     private static final long PROGRESS_REPORT_INTERVAL = 500;
 
     private final Session session;
+    private final Session background;
     private final UpdaterInfo updaterInfo;
     private final UpdaterExecutionReport report;
     private volatile boolean cancelled;
 
     public UpdaterExecutor(Node updaterNode, final Session session) throws RepositoryException, IllegalAccessException, InstantiationException, ClassNotFoundException, IOException, IllegalArgumentException, CompilationFailedException {
         this.session = session;
+        this.background = session.impersonate(new SimpleCredentials("system", new char[] {}));
         report = new UpdaterExecutionReport();
         try {
             updaterInfo = new UpdaterInfo(updaterNode);
@@ -155,6 +158,9 @@ public class UpdaterExecutor implements EventListener {
             } catch (RepositoryException e) {
                 log.error("Failed to remove self as event listener during destroy", e);
             }
+        }
+        if (background != null) {
+            background.logout();
         }
     }
 
@@ -257,6 +263,7 @@ public class UpdaterExecutor implements EventListener {
         boolean updated = false, failed = false;
         if (updaterInfo.isRevert()) {
             try {
+                ensureIsCheckedOut(node);
                 updated = updaterInfo.getUpdater().undoUpdate(node);
             } catch (UnsupportedOperationException e) {
                 throw e;
@@ -267,6 +274,7 @@ public class UpdaterExecutor implements EventListener {
             }
         } else {
             try {
+                ensureIsCheckedOut(node);
                 updated = updaterInfo.getUpdater().doUpdate(node);
             } catch (UnsupportedOperationException e) {
                 throw e;
@@ -458,6 +466,13 @@ public class UpdaterExecutor implements EventListener {
             log.error("Failed to save log property", e);
         } finally {
             IOUtils.closeQuietly(fis);
+        }
+    }
+
+    private void ensureIsCheckedOut(Node node) throws RepositoryException {
+        if (!node.isCheckedOut()) {
+            log.debug("Checking out node {}" + node.getPath());
+            JcrUtils.ensureIsCheckedOut(background.getNodeByIdentifier(node.getIdentifier()), true);
         }
     }
 
