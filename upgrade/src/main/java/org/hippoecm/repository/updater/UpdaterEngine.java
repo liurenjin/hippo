@@ -100,7 +100,6 @@ public class UpdaterEngine {
     Session session;
     UpdaterSession updaterSession;
     private Vector<ModuleRegistration> modules;
-    private boolean clustered;
 
     class ModuleRegistration implements UpdaterContext {
         String name;
@@ -150,10 +149,6 @@ public class UpdaterEngine {
         public void registerVisitor(ItemVisitor visitor) {
             try {
                 if (visitor instanceof UpdaterItemVisitor.NamespaceVisitor) {
-                    if (clustered) {
-                        log.error("Not executing visitor " + visitor.toString() + " because running in clustered environment.");
-                        return;
-                    }
                     UpdaterItemVisitor.NamespaceVisitor namespaceVisitor = (UpdaterItemVisitor.NamespaceVisitor) visitor;
                     if (namespaceVisitor.cndName == null && namespaceVisitor.cndReader == null) {
                         log.warn("no new definition of namespace "+namespaceVisitor.prefix+" found, ignoring registration of upgrading visitor");
@@ -357,14 +352,13 @@ public class UpdaterEngine {
         // for unit testing purposes only
     }
 
-    public UpdaterEngine(Session session, boolean clustered) throws RepositoryException {
-        this(session, Modules.getModules(), clustered);
+    public UpdaterEngine(Session session) throws RepositoryException {
+        this(session, Modules.getModules());
     }
 
-    public UpdaterEngine(Session session, Modules allModules, boolean clustered) throws RepositoryException {
+    public UpdaterEngine(Session session, Modules allModules) throws RepositoryException {
         this.session = session;
         this.modules = new Vector<ModuleRegistration>();
-        this.clustered = clustered;
         for (UpdaterModule module : new Modules<UpdaterModule>(allModules, UpdaterModule.class)) {
             ModuleRegistration registration = new ModuleRegistration(module);
             module.register(registration);
@@ -374,7 +368,7 @@ public class UpdaterEngine {
         updaterSession = new UpdaterSession(session);
     }
 
-    boolean prepare() throws RepositoryException {
+    boolean prepare(final boolean clustered) throws RepositoryException {
         // Obtain which version we are currently at
         Set<String> currentVersions = new HashSet<String>();
 
@@ -386,7 +380,7 @@ public class UpdaterEngine {
             }
         }
 
-        if (prepare(modules, currentVersions)) {
+        if (prepare(modules, currentVersions, clustered)) {
             StringBuffer logInfo = new StringBuffer();
             for(String tag : currentVersions) {
                 logInfo.append(" ");
@@ -422,7 +416,7 @@ public class UpdaterEngine {
         }
     }
 
-    static boolean prepare(Vector<ModuleRegistration> modules, Set<String> currentVersions) throws RepositoryException {
+    static boolean prepare(Vector<ModuleRegistration> modules, Set<String> currentVersions, final boolean clustered) throws RepositoryException {
         // Select applicable modules for the current version.
         boolean singleRunner = false;
         for (Iterator<ModuleRegistration> iter = modules.iterator(); iter.hasNext();) {
@@ -461,6 +455,7 @@ public class UpdaterEngine {
                     isValid = false;
                 }
             }
+
             if (!isValid) {
                 iter.remove();
             }
@@ -475,6 +470,19 @@ public class UpdaterEngine {
         }
         if (modules.size() == 0) {
             return false;
+        }
+
+        if (clustered) {
+            for (ModuleRegistration module : modules) {
+                final Iterator<ItemVisitor> visitors = module.visitors.iterator();
+                while (visitors.hasNext()) {
+                    final ItemVisitor visitor = visitors.next();
+                    if (visitor instanceof NamespaceVisitorImpl) {
+                        log.error("Not executing visitor {} because running in clustered environment.", visitor);
+                        visitors.remove();
+                    }
+                }
+            }
         }
 
         // Sort remaining modules
@@ -638,8 +646,8 @@ public class UpdaterEngine {
             boolean updates;
             do {
                 Session subSession = session.impersonate(new SimpleCredentials("system", new char[] {}));
-                UpdaterEngine engine = new UpdaterEngine(subSession, clustered);
-                updates = engine.prepare();
+                UpdaterEngine engine = new UpdaterEngine(subSession);
+                updates = engine.prepare(clustered);
                 if (updates) {
                     needsRestart = true;
                     try {
@@ -687,7 +695,7 @@ public class UpdaterEngine {
         bareSession.postMountEnabled(false);
         subSession.refresh(false);
         try {
-            UpdaterEngine engine = new UpdaterEngine(subSession, modules, false);
+            UpdaterEngine engine = new UpdaterEngine(subSession, modules);
             engine.upgrade();
             engine.close();
             subSession.save();
