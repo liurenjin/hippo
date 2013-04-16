@@ -280,11 +280,9 @@ public class RepositoryServlet extends HttpServlet {
 
         }
 
-        hippoEventBus.unregister(listener);
-        listener = null;
+        HippoServiceRegistry.unregisterService(listener, HippoEventBus.class);
         HippoServiceRegistry.unregisterService(hippoEventBus, HippoEventBus.class);
-        hippoEventBus = null;
-
+        hippoEventBus.destroy();
     }
 
     @Override
