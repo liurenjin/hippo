@@ -55,6 +55,8 @@ import org.hippoecm.repository.updater.UpdaterEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.hippoecm.repository.api.HippoNodeType.NT_INITIALIZEFOLDER;
+
 public class LocalHippoRepository extends HippoRepositoryImpl {
     /** SVN id placeholder */
     @SuppressWarnings("unused")
@@ -68,6 +70,9 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
 
     /** System property for overriding the repository config file */
     public static final String SYSTEM_UPGRADE_PROPERTY = "repo.upgrade";
+
+    /** System property for enabling bootstrap */
+    public static final String SYSTEM_BOOTSTRAP_PROPERTY = "repo.bootstrap";
 
     /** System property for overriding the servlet config file */
     public static final String SYSTEM_SERVLETCONFIG_PROPERTY = "repo.servletconfig";
@@ -351,22 +356,16 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
 
         try {
             // get the current root/system session for the default workspace for namespace and nodetypes init
-            Session jcrRootSession =  ((LocalRepositoryImpl)jackrabbitRepository).getRootSession(null);
+            Session jcrRootSession =  jackrabbitRepository.getRootSession(null);
 
             if(!jcrRootSession.getRootNode().isNodeType("mix:referenceable")) {
                 jcrRootSession.getRootNode().addMixin("mix:referenceable");
                 jcrRootSession.save();
             }
 
-            boolean hasHippoNamespace;
-            try {
-                jcrRootSession.getNamespaceURI("hippo");
-                hasHippoNamespace = true;
-            } catch (NamespaceException ex) {
-                hasHippoNamespace = false;
-            }
+            boolean initializedBefore = initializedBefore(jcrRootSession);
 
-            if (hasHippoNamespace) {
+            if (initializedBefore) {
                 switch(upgradeFlag) {
                 case TRUE:
                     jackrabbitRepository.enableVirtualLayer(false);
@@ -384,71 +383,13 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                 }
             }
 
-            Session syncSession = jcrRootSession.impersonate(new SimpleCredentials("system", new char[] {}));
-
-            // TODO HREPTWO-3571: hippofacnav.cnd must be removed when faceted navigation is moved to its own subproject, and should be added through extension.xml, see
-            
-            for(String cndName : new String[] { "hippo.cnd", "hipposys.cnd", "hipposysedit.cnd", "hippofacnav.cnd" }) {
-                try {
-                    log.info("Initializing nodetypes from: " + cndName);
-                    LoadInitializationModule.initializeNodetypes(syncSession.getWorkspace(), getClass().getClassLoader().getResourceAsStream(cndName), cndName);
-                    syncSession.save();
-                } catch (ConstraintViolationException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                } catch (InvalidItemStateException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                } catch (ItemExistsException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                } catch (LockException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                } catch (NoSuchNodeTypeException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                } catch (ParseException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                } catch (VersionException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                } catch (AccessDeniedException ex) {
-                    throw new RepositoryException("Could not initialize repository with hippo node types", ex);
-                }
-            }
-
-            jackrabbitRepository.enableVirtualLayer(true);
-
-            // After initializing namespaces and nodetypes switch to the decorated session.
-            rootSession = DecoratorFactoryImpl.getSessionDecorator(syncSession.impersonate(new SimpleCredentials("system", new char[]{})));
-
-            if (!rootSession.getRootNode().hasNode("hippo:configuration")) {
-                log.info("Initializing configuration content");
-                InputStream configuration = getClass().getResourceAsStream("configuration.xml");
-                if (configuration != null) {
-                    LoadInitializationModule.initializeNodecontent(rootSession, "/", configuration, getClass().getPackage().getName() + ".configuration.xml");
-                } else {
-                    log.error("Could not initialize configuration content: ResourceAsStream not found: configuration.xml");
-                }
-                rootSession.save();
-            } else {
-                log.info("Initial configuration content already present");
-            }
-
-            // load all extension resources
-            try {
-                LoadInitializationModule.locateExtensionResources(rootSession, rootSession.getRootNode().getNode("hippo:configuration/hippo:initialize"));
-            } catch (IOException ex) {
-                throw new RepositoryException("Could not obtain initial configuration from classpath", ex);
-            }
-            LoadInitializationModule.refresh(rootSession);
-            if (log.isDebugEnabled()) {
-                LoadInitializationModule.query(rootSession);
-            }
-
-            if (!hasHippoNamespace) {
-                Session initializeSession = DecoratorFactoryImpl.getSessionDecorator(jcrRootSession.impersonate(new SimpleCredentials("system", new char[] {})));
-                UpdaterEngine.migrate(initializeSession, jackrabbitRepository.isClustered());
-                initializeSession.logout();
+            if (!initializedBefore || isContentBootstrapEnabled()) {
+                initializeSystemNodeTypes(jcrRootSession);
+                bootstrapContent(jcrRootSession);
             }
 
             for(DaemonModule module : new Modules<DaemonModule>(Modules.getModules(), DaemonModule.class)) {
-                Session moduleSession = syncSession.impersonate(new SimpleCredentials("system", new char[]{}));
+                Session moduleSession = jcrRootSession.impersonate(new SimpleCredentials("system", new char[]{}));
                 moduleSession = DecoratorFactoryImpl.getSessionDecorator(moduleSession);
                 try {
                     module.initialize(moduleSession);
@@ -458,11 +399,79 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                 }
             }
 
-            syncSession.logout(); // the spawned impersonated sessions should remain active though
-
         } catch (LoginException ex) {
             log.error("no access to repository by repository itself", ex);
         }
+    }
+
+    private void bootstrapContent(final Session systemSession) throws RepositoryException {
+        jackrabbitRepository.enableVirtualLayer(true);
+
+        // After initializing namespaces and nodetypes switch to the decorated session.
+        rootSession = DecoratorFactoryImpl.getSessionDecorator(systemSession.impersonate(new SimpleCredentials("system", new char[]{})));
+
+        if (!rootSession.getRootNode().hasNode("hippo:configuration")) {
+            log.info("Initializing configuration content");
+            InputStream configuration = getClass().getResourceAsStream("configuration.xml");
+            if (configuration != null) {
+                LoadInitializationModule.initializeNodecontent(rootSession, "/", configuration, getClass().getPackage().getName() + ".configuration.xml");
+            } else {
+                log.error("Could not initialize configuration content: ResourceAsStream not found: configuration.xml");
+            }
+            rootSession.save();
+        } else {
+            log.info("Initial configuration content already present");
+        }
+
+        // load all extension resources
+        try {
+            LoadInitializationModule.locateExtensionResources(rootSession, rootSession.getRootNode().getNode("hippo:configuration/hippo:initialize"));
+        } catch (IOException ex) {
+            throw new RepositoryException("Could not obtain initial configuration from classpath", ex);
+        }
+        LoadInitializationModule.refresh(rootSession);
+        if (log.isDebugEnabled()) {
+            LoadInitializationModule.query(rootSession);
+        }
+
+    }
+
+    private void initializeSystemNodeTypes(final Session systemSession) throws RepositoryException {
+        Session syncSession = systemSession.impersonate(new SimpleCredentials("system", new char[] {}));
+
+        for(String cndName : new String[] { "hippo.cnd", "hipposys.cnd", "hipposysedit.cnd", "hippofacnav.cnd" }) {
+            try {
+                log.info("Initializing nodetypes from: " + cndName);
+                LoadInitializationModule.initializeNodetypes(syncSession.getWorkspace(), getClass().getClassLoader().getResourceAsStream(cndName), cndName);
+                syncSession.save();
+            } catch (ConstraintViolationException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            } catch (InvalidItemStateException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            } catch (ItemExistsException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            } catch (LockException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            } catch (NoSuchNodeTypeException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            } catch (ParseException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            } catch (VersionException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            } catch (AccessDeniedException ex) {
+                throw new RepositoryException("Could not initialize repository with hippo node types", ex);
+            }
+        }
+
+        syncSession.logout();
+    }
+
+    private boolean initializedBefore(final Session systemSession) throws RepositoryException {
+        return systemSession.getWorkspace().getNodeTypeManager().hasNodeType(NT_INITIALIZEFOLDER);
+    }
+
+    private boolean isContentBootstrapEnabled() {
+        return Boolean.getBoolean(SYSTEM_BOOTSTRAP_PROPERTY);
     }
 
     @Override
