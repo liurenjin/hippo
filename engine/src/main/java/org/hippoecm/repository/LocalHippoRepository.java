@@ -48,6 +48,7 @@ import org.hippoecm.repository.api.HippoSession;
 import org.hippoecm.repository.decorating.checked.CheckedDecoratorFactory;
 import org.hippoecm.repository.ext.DaemonModule;
 import org.hippoecm.repository.impl.DecoratorFactoryImpl;
+import org.hippoecm.repository.impl.SessionDecorator;
 import org.hippoecm.repository.jackrabbit.HippoSessionItemStateManager;
 import org.hippoecm.repository.jackrabbit.RepositoryImpl;
 import org.hippoecm.repository.security.SecurityManager;
@@ -82,9 +83,6 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
 
     /** The advised threshold on the number of modified nodes to hold in transient session state */
     public static int batchThreshold = 96;
-
-    /** hippo decorated root session */
-    private HippoSession rootSession;
 
     protected static final Logger log = LoggerFactory.getLogger(LocalHippoRepository.class);
 
@@ -288,7 +286,9 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             ((SecurityManager) jackrabbitRepository.getSecurityManager()).init();
             if (upgradeValidateFlag) {
                 log.warn("post migration cycle validating content");
-                ((org.hippoecm.repository.impl.SessionDecorator)rootSession).postValidation();
+                SessionDecorator session = DecoratorFactoryImpl.getSessionDecorator(jackrabbitRepository.getRootSession(null));
+                session.postValidation();
+                session.logout();
             }
         } else {
             ((SecurityManager) jackrabbitRepository.getSecurityManager()).init();
@@ -388,6 +388,8 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                 bootstrapContent(jcrRootSession);
             }
 
+            jackrabbitRepository.enableVirtualLayer(true);
+
             for(DaemonModule module : new Modules<DaemonModule>(Modules.getModules(), DaemonModule.class)) {
                 Session moduleSession = jcrRootSession.impersonate(new SimpleCredentials("system", new char[]{}));
                 moduleSession = DecoratorFactoryImpl.getSessionDecorator(moduleSession);
@@ -405,33 +407,29 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
     }
 
     private void bootstrapContent(final Session systemSession) throws RepositoryException {
-        jackrabbitRepository.enableVirtualLayer(true);
 
-        // After initializing namespaces and nodetypes switch to the decorated session.
-        rootSession = DecoratorFactoryImpl.getSessionDecorator(systemSession.impersonate(new SimpleCredentials("system", new char[]{})));
-
-        if (!rootSession.getRootNode().hasNode("hippo:configuration")) {
+        if (!systemSession.getRootNode().hasNode("hippo:configuration")) {
             log.info("Initializing configuration content");
             InputStream configuration = getClass().getResourceAsStream("configuration.xml");
             if (configuration != null) {
-                LoadInitializationModule.initializeNodecontent(rootSession, "/", configuration, getClass().getPackage().getName() + ".configuration.xml");
+                LoadInitializationModule.initializeNodecontent(systemSession, "/", configuration, getClass().getPackage().getName() + ".configuration.xml");
             } else {
                 log.error("Could not initialize configuration content: ResourceAsStream not found: configuration.xml");
             }
-            rootSession.save();
+            systemSession.save();
         } else {
             log.info("Initial configuration content already present");
         }
 
         // load all extension resources
         try {
-            LoadInitializationModule.locateExtensionResources(rootSession, rootSession.getRootNode().getNode("hippo:configuration/hippo:initialize"));
+            LoadInitializationModule.locateExtensionResources(systemSession, systemSession.getRootNode().getNode("hippo:configuration/hippo:initialize"));
         } catch (IOException ex) {
             throw new RepositoryException("Could not obtain initial configuration from classpath", ex);
         }
-        LoadInitializationModule.refresh(rootSession);
+        LoadInitializationModule.refresh(systemSession);
         if (log.isDebugEnabled()) {
-            LoadInitializationModule.query(rootSession);
+            LoadInitializationModule.query(systemSession);
         }
 
     }
@@ -481,7 +479,7 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
         }
         daemonModules.clear();
 
-        Session session = null;
+        Session session;
         if (dump && repository != null) {
             try {
                 session = login();
@@ -495,21 +493,6 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                 if (session != null) {
                     session.logout();
                 }
-            }
-        }
-
-        // stop all listeners on rootSession
-        if (rootSession != null && rootSession.isLive()) {
-            try {
-                ObservationManager obMgr = rootSession.getWorkspace().getObservationManager();
-                EventListenerIterator elIter = obMgr.getRegisteredEventListeners();
-                while (elIter.hasNext()) {
-                    EventListener el = elIter.nextEventListener();
-                    log.debug("Removing EventListener from root session");
-                    obMgr.removeEventListener(el);
-                }
-            } catch (Exception ex) {
-                log.error("Error while removing listener: " + ex.getMessage(), ex);
             }
         }
 
