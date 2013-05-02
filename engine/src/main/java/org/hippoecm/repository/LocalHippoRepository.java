@@ -286,7 +286,8 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             ((SecurityManager) jackrabbitRepository.getSecurityManager()).init();
             if (upgradeValidateFlag) {
                 log.warn("post migration cycle validating content");
-                SessionDecorator session = DecoratorFactoryImpl.getSessionDecorator(jackrabbitRepository.getRootSession(null));
+                SessionDecorator session = DecoratorFactoryImpl.getSessionDecorator(
+                        jackrabbitRepository.getRootSession(null).impersonate(new SimpleCredentials("system", new char[]{})));
                 session.postValidation();
                 session.logout();
             }
