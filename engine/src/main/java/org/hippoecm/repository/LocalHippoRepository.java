@@ -248,7 +248,9 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             ((HippoSecurityManager) jackrabbitRepository.getSecurityManager()).configure();
             if (upgradeValidateFlag) {
                 log.warn("post migration cycle validating content");
-                SessionDecorator session = DecoratorFactoryImpl.getSessionDecorator(jackrabbitRepository.getRootSession(null));
+                SessionDecorator session = DecoratorFactoryImpl.getSessionDecorator(
+                        jackrabbitRepository.getRootSession(null).impersonate(
+                                new SimpleCredentials("system", new char[] {})));
                 session.postValidation();
                 session.logout();
             }
@@ -552,7 +554,7 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                 jackrabbitRepository.shutdown();
                 jackrabbitRepository = null;
             } catch (Exception ex) {
-                log.error("Error while shuting down jackrabbitRepository: " + ex.getMessage(), ex);
+                log.error("Error while shutting down jackrabbitRepository: " + ex.getMessage(), ex);
             }
         }
         repository = null;
