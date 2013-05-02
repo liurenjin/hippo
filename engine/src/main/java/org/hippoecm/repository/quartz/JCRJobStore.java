@@ -31,6 +31,7 @@ import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.Value;
 import javax.jcr.ValueFormatException;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
@@ -39,6 +40,7 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.QueryResult;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.quartz.JobDetail;
 import org.quartz.JobPersistenceException;
@@ -396,7 +398,23 @@ public class JCRJobStore implements JobStore {
                 QueryResult result = query.execute();
                 for(NodeIterator iter = result.getNodes(); iter.hasNext(); ) {
                     Node triggerNode = iter.nextNode();
-                    if(triggerNode != null && triggerNode.hasProperty("hipposched:nextFireTime")) {
+                    final Node jobNode = triggerNode.getParent().getParent();
+                    try {
+                        // make sure we can load the job
+                        final Value jobDataValue = jobNode.getProperty("hipposched:data").getValue();
+                        createObjectFromBinaryValue(jobDataValue);
+                    } catch (ClassNotFoundException e) {
+                        log.info("Cannot execute job " + jobNode.getPath() + " on this cluster node. Skipping");
+                        continue;
+                    } catch (IOException e) {
+                        if (log.isDebugEnabled()) {
+                            log.error("Failed to load job " + jobNode.getPath(), e);
+                        } else {
+                            log.error("Failed to load job " + jobNode.getPath() + ": " + e.toString());
+                        }
+                        continue;
+                    }
+                    if(triggerNode.hasProperty("hipposched:nextFireTime")) {
                         if (lock(session, triggerNode.getPath())) {
                             if (triggerNode.isNodeType("mix:versionable") && !triggerNode.isCheckedOut()) {
                                 triggerNode.checkout();
@@ -427,6 +445,15 @@ public class JCRJobStore implements JobStore {
             throw new JobPersistenceException("cannot recreate trigger", ex);
         }
         return null;
+    }
+
+    private static Object createObjectFromBinaryValue(final Value value) throws RepositoryException, IOException, ClassNotFoundException {
+        ObjectInputStream ois = new ObjectInputStream(value.getBinary().getStream());
+        try {
+            return ois.readObject();
+        } finally {
+            IOUtils.closeQuietly(ois);
+        }
     }
 
     public void releaseAcquiredTrigger(SchedulingContext ctxt, Trigger trigger) throws JobPersistenceException {
