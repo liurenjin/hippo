@@ -404,7 +404,7 @@ public class JCRJobStore implements JobStore {
                         final Value jobDataValue = jobNode.getProperty("hipposched:data").getValue();
                         createObjectFromBinaryValue(jobDataValue);
                     } catch (ClassNotFoundException e) {
-                        log.info("Cannot execute job " + jobNode.getPath() + " on this cluster node. Skipping");
+                        log.warn("Cannot execute job " + jobNode.getPath() + " on this cluster node. Skipping");
                         continue;
                     } catch (IOException e) {
                         if (log.isDebugEnabled()) {
