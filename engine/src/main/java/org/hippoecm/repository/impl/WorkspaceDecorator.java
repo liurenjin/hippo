@@ -236,6 +236,9 @@ public class WorkspaceDecorator extends org.hippoecm.repository.decorating.Works
             }
 
             public void removeEventListener(EventListener listener) throws RepositoryException {
+                if (!session.isLive()) {
+                    return;
+                }
                 synchronized (listeners) {
                     Set<EventListener> registered = listeners.get(session);
                     if (registered != null) {
