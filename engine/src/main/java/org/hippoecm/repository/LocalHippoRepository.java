@@ -559,6 +559,17 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
         }
         repository = null;
 
+        try {
+            HippoRepository vmHippoRepository = VMHippoRepository.create(getLocation());
+            if (vmHippoRepository == this) {
+                // temporary workaround to unregister this repository as its no longer available
+                // REPO-662 will provide a more permanent solution
+                VMHippoRepository.register(getLocation(), null);
+            }
+        }
+        catch (RepositoryException re) {
+            // location not registered
+        }
         super.close();
     }
 

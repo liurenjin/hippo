@@ -45,8 +45,10 @@ public abstract class HippoRepositoryImpl implements HippoRepository {
     protected final Logger log = LoggerFactory.getLogger(HippoRepositoryImpl.class);
 
     private String JTSLookupName = "java:comp/env/TransactionManager";
+    private boolean initialized = false;
 
     private void initialize() {
+        initialized = true;
     }
 
     private String workingDirectory;
@@ -79,7 +81,10 @@ public abstract class HippoRepositoryImpl implements HippoRepository {
     }
 
     public String getLocation() {
-        return workingDirectory;
+        // trick to allow repository users to determine if it is (maybe no longer) initialized or not
+        // without having to extend the API
+        // REPO-662 will provide a more permanent solution
+        return initialized ? workingDirectory : null;
     }
 
     /**
@@ -131,6 +136,7 @@ public abstract class HippoRepositoryImpl implements HippoRepository {
 
     public void close() {
         HippoRepositoryFactory.unregister(this);
+        initialized = false;
     }
 
     /**

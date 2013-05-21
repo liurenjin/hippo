@@ -65,9 +65,18 @@ public class VMHippoRepository {
 
     /** DO NOT USE THIS METHOD!  This class and all its methods are NOT part of the API.
      * @param location location of the repository
-     * @param repository the location to register at the location
+     * @param repository the repository to register at the location
      */
     public static void register(String location, HippoRepository repository) {
-        repositories.put(location, repository);
+        if (location != null) {
+            if (repository == null) {
+                // add temporary support for unregister an existing repository, see LocalHippoRepository.close()
+                // REPO-662 will provide a more permanent solution
+                repositories.remove(location);
+            }
+            else {
+                repositories.put(location, repository);
+            }
+        }
     }
 }
