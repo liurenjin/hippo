@@ -39,6 +39,11 @@
       <artifactId>hippo-repository-utilities</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.onehippo.cms7</groupId>
+      <artifactId>hippo-repository-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -54,6 +59,7 @@
         <includes>
           <include>**/*.xml</include>
           <include>**/*.cnd</include>
+          <include>**/*.klass</include>
         </includes>
       </resource>
     </resources>
@@ -67,7 +73,7 @@
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
             <manifestEntries>
-              <Hippo-Modules>org.hippoecm.repository.upgrade.Upgrader12a org.hippoecm.repository.upgrade.Upgrader12b org.hippoecm.repository.upgrade.Upgrader12c org.hippoecm.repository.upgrade.Upgrader13a org.hippoecm.repository.upgrade.Upgrader16a org.hippoecm.repository.upgrade.UpgraderAvailability1 org.hippoecm.repository.upgrade.Upgrader18a org.hippoecm.repository.upgrade.Upgrader19a</Hippo-Modules>
+              <Hippo-Modules>org.hippoecm.repository.upgrade.Upgrader12a org.hippoecm.repository.upgrade.Upgrader12b org.hippoecm.repository.upgrade.Upgrader12c org.hippoecm.repository.upgrade.Upgrader13a org.hippoecm.repository.upgrade.Upgrader16a org.hippoecm.repository.upgrade.UpgraderAvailability1 org.hippoecm.repository.upgrade.Upgrader18a org.hippoecm.repository.upgrade.Upgrader19a org.hippoecm.repository.upgrade.Upgrader22a</Hippo-Modules>
             </manifestEntries>
           </archive>
         </configuration>

@@ -273,7 +273,7 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
     }
 
     public void setValue(InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        setValue(valueFactory.createValue(value));
+        setValue(valueFactory.createValue(valueFactory.createBinary(value)));
     }
 
     public void setValue(long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -414,7 +414,7 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
     }
 
     public Binary getBinary() throws ValueFormatException, RepositoryException {
-        throw new UpdaterException("illegal method");
+        return getValue().getBinary();
     }
 
     public BigDecimal getDecimal() throws ValueFormatException, RepositoryException {
