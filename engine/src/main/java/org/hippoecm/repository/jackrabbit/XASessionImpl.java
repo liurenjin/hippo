@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.AccessControlException;
 import java.security.Principal;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -233,7 +232,7 @@ public class XASessionImpl extends org.apache.jackrabbit.core.ForkedXASessionImp
         String workspaceName = repositoryContext.getWorkspaceManager().getDefaultWorkspaceName();
 
         final Set<Principal> principals = new HashSet<Principal>(subject.getPrincipals());
-        principals.add(new AuthorizationFilterPrincipal(Arrays.asList(domainExtensions)));
+        principals.add(new AuthorizationFilterPrincipal(helper.getFacetRules(domainExtensions)));
         principals.addAll(session.getSubject().getPrincipals());
 
         Subject newSubject = new Subject(subject.isReadOnly(), principals, subject.getPublicCredentials(), subject.getPrivateCredentials());
