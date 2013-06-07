@@ -33,6 +33,7 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.version.VersionException;
 import javax.transaction.xa.XAResource;
 
+import org.onehippo.repository.security.domain.DomainRuleExtension;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -197,6 +198,14 @@ public interface HippoSession extends Session {
      */
     public void registerSessionCloseCallback(CloseCallback callback);
     
+    /**
+     * Create a new Session that contains the union of access control rules
+     * of this Session and the provided session, with the optional addition
+     * of custom domain rules.  Those rules will be added to existing domain
+     * rules, imposing additional restrictions on the session.
+     */
+    Session createSecurityDelegate(Session session, DomainRuleExtension... domainExtensions) throws RepositoryException;
+
     /**
      * <b>DO NOT USE THIS METHOD.  This call is not yet part of the API.</b><br/>
      * The interface of the callback handler that is called when the session is

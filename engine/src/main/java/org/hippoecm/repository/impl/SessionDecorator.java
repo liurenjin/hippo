@@ -55,18 +55,20 @@ import javax.xml.transform.stream.StreamResult;
 import org.apache.jackrabbit.api.XASession;
 import org.apache.jackrabbit.commons.xml.ToXmlContentHandler;
 import org.apache.jackrabbit.spi.Path;
-import org.hippoecm.repository.deriveddata.DerivedDataEngine;
 import org.hippoecm.repository.api.HippoNode;
 import org.hippoecm.repository.api.HippoSession;
+import org.hippoecm.repository.api.HippoWorkspace;
 import org.hippoecm.repository.api.ImportMergeBehavior;
 import org.hippoecm.repository.api.ImportReferenceBehavior;
 import org.hippoecm.repository.decorating.DecoratorFactory;
 import org.hippoecm.repository.decorating.NodeIteratorDecorator;
+import org.hippoecm.repository.deriveddata.DerivedDataEngine;
 import org.hippoecm.repository.jackrabbit.HippoLocalItemStateManager;
 import org.hippoecm.repository.jackrabbit.InternalHippoSession;
 import org.hippoecm.repository.jackrabbit.xml.DereferencedSysViewSAXEventGenerator;
 import org.hippoecm.repository.jackrabbit.xml.HippoDocumentViewExporter;
 import org.hippoecm.repository.jackrabbit.xml.PhysicalSysViewSAXEventGenerator;
+import org.onehippo.repository.security.domain.DomainRuleExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
@@ -79,14 +81,18 @@ public class SessionDecorator extends org.hippoecm.repository.decorating.Session
 
     protected DerivedDataEngine derivedEngine;
 
-    SessionDecorator(DecoratorFactory factory, Repository repository, Session session) {
+    protected final Credentials credentials;
+
+    SessionDecorator(DecoratorFactory factory, Repository repository, Session session, Credentials credentials) {
         super(factory, repository, session);
         derivedEngine = new DerivedDataEngine(this);
+        this.credentials = credentials;
     }
 
-    SessionDecorator(DecoratorFactory factory, Repository repository, XASession session) throws RepositoryException {
+    SessionDecorator(DecoratorFactory factory, Repository repository, XASession session, Credentials credentials) throws RepositoryException {
         super(factory, repository, session);
         derivedEngine = new DerivedDataEngine(this);
+        this.credentials = credentials;
     }
 
     void postSave(Node node) throws VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -149,7 +155,7 @@ public class SessionDecorator extends org.hippoecm.repository.decorating.Session
     @Override
     public Session impersonate(Credentials credentials) throws LoginException, RepositoryException {
         Session newSession = session.impersonate(credentials);
-        return DecoratorFactoryImpl.getSessionDecorator(newSession);
+        return DecoratorFactoryImpl.getSessionDecorator(newSession, credentials);
     }
 
     @Override
@@ -451,6 +457,21 @@ public class SessionDecorator extends org.hippoecm.repository.decorating.Session
     @Override
     public void registerSessionCloseCallback(CloseCallback callback) {
         getInternalHippoSession().registerSessionCloseCallback(callback);
+    }
+
+    @Override
+    public Session createSecurityDelegate(final Session session, DomainRuleExtension... domainExtensions) throws RepositoryException {
+        if (!(super.session instanceof InternalHippoSession)) {
+            throw new UnsupportedOperationException("Decorated session is not of type " + InternalHippoSession.class.getName());
+        }
+        if (!(session instanceof SessionDecorator)) {
+            throw new IllegalArgumentException("Expected session of type " + getClass().getName());
+        }
+        final SessionDecorator other = (SessionDecorator) session;
+        if (!(other.session instanceof InternalHippoSession)) {
+            throw new UnsupportedOperationException("Decorated session is not of type " + InternalHippoSession.class.getName());
+        }
+        return ((InternalHippoSession) super.session).createDelegatedSession((InternalHippoSession) other.session, domainExtensions);
     }
 
     private InternalHippoSession getInternalHippoSession() {

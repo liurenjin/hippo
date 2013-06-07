@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.AccessControlException;
 import java.security.Principal;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.jcr.AccessDeniedException;
@@ -30,6 +32,7 @@ import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
@@ -53,7 +56,9 @@ import org.apache.jackrabbit.core.state.SharedItemStateManager;
 import org.hippoecm.repository.api.HippoSession;
 import org.hippoecm.repository.jackrabbit.xml.DefaultContentHandler;
 import org.hippoecm.repository.query.lucene.AuthorizationQuery;
+import org.hippoecm.repository.security.AuthorizationFilterPrincipal;
 import org.hippoecm.repository.security.HippoAMContext;
+import org.onehippo.repository.security.domain.DomainRuleExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
@@ -213,6 +218,18 @@ public class SessionImpl extends org.apache.jackrabbit.core.SessionImpl implemen
     @Override
     public AuthorizationQuery getAuthorizationQuery() {
         return helper.getAuthorizationQuery();
+    }
+
+    @Override
+    public Session createDelegatedSession(final InternalHippoSession session, DomainRuleExtension... domainExtensions) throws RepositoryException {
+        String workspaceName = repositoryContext.getWorkspaceManager().getDefaultWorkspaceName();
+
+        final Set<Principal> principals = new HashSet<Principal>(subject.getPrincipals());
+        principals.add(new AuthorizationFilterPrincipal(Arrays.asList(domainExtensions)));
+        principals.addAll(session.getSubject().getPrincipals());
+
+        Subject newSubject = new Subject(subject.isReadOnly(), principals, subject.getPublicCredentials(), subject.getPrivateCredentials());
+        return repositoryContext.getWorkspaceManager().createSession(newSubject, workspaceName);
     }
 
     @Override

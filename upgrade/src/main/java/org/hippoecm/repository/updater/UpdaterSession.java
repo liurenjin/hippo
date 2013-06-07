@@ -66,6 +66,7 @@ import org.hippoecm.repository.api.HippoNode;
 import org.hippoecm.repository.api.HippoSession;
 import org.hippoecm.repository.impl.NodeDecorator;
 import org.hippoecm.repository.impl.SessionDecorator;
+import org.onehippo.repository.security.domain.DomainRuleExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
@@ -599,6 +600,11 @@ final public class UpdaterSession implements HippoSession {
     }
 
     public void registerSessionCloseCallback(CloseCallback callback) {
+        throw new UpdaterException("illegal method");
+    }
+
+    @Override
+    public Session createSecurityDelegate(final Session session, DomainRuleExtension... domainExtensions) {
         throw new UpdaterException("illegal method");
     }
 }

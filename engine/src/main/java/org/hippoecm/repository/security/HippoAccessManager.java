@@ -16,6 +16,8 @@
 package org.hippoecm.repository.security;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -72,15 +74,17 @@ import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.dataprovider.HippoNodeId;
 import org.hippoecm.repository.jackrabbit.HippoSessionItemStateManager;
 import org.hippoecm.repository.security.domain.DomainRule;
-import org.hippoecm.repository.security.domain.FacetRule;
+import org.hippoecm.repository.security.domain.QFacetRule;
 import org.hippoecm.repository.security.principals.FacetAuthPrincipal;
 import org.hippoecm.repository.security.principals.GroupPrincipal;
+import org.onehippo.repository.security.domain.DomainRuleExtension;
+import org.onehippo.repository.security.domain.FacetRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * HippoAccessManager based on facet authorization. A subject (user)
- * has a set of {@link FacetAuth}s which hold the domain configuration
+ * has a set of {@link FacetAuthPrincipal}s which hold the domain configuration
  * as defined by a set of {@link DomainRule}s, the roles the subject has
  * for the domain and the JCR permissions the subject has for the domain.
  *
@@ -189,6 +193,8 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
     private final List<String> groupIds = new ArrayList<String>();
     private final List<String> currentDomainRoleIds = new ArrayList<String>();
 
+    private Map<String, Collection<QFacetRule>> extendedFacetRules;
+
     /**
      * The logger
      */
@@ -256,14 +262,40 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
         if (cacheSize < 0) {
             cacheSize = DEFAULT_PERM_CACHE_SIZE;
         }
-        HippoAccessCache.setMaxSize(cacheSize);
-        readAccessCache = HippoAccessCache.getInstance(userId);
+
+        final Set<AuthorizationFilterPrincipal> filterPrincipals = subject.getPrincipals(AuthorizationFilterPrincipal.class);
+        if (filterPrincipals.isEmpty()) {
+            HippoAccessCache.setMaxSize(cacheSize);
+            readAccessCache = HippoAccessCache.getInstance(userId);
+        } else {
+            initializeExtendedFacetRules(filterPrincipals);
+
+            readAccessCache = new HippoAccessCache();
+        }
         readVirtualAccessCache = new WeakHashMap<HippoNodeId, Boolean>();
 
         // we're done
         initialized = true;
 
         log.info("Initialized HippoAccessManager for user " + userId + " with cache size " + cacheSize);
+    }
+
+    private void initializeExtendedFacetRules(final Set<AuthorizationFilterPrincipal> filterPrincipals) throws RepositoryException {
+        extendedFacetRules = new HashMap<String, Collection<QFacetRule>>();
+        for (AuthorizationFilterPrincipal afp : filterPrincipals) {
+            final List<DomainRuleExtension> domainRuleExtensions = afp.getDomainRuleExtensions();
+            if (domainRuleExtensions == null) {
+                continue;
+            }
+            for (DomainRuleExtension domainRuleExtension : domainRuleExtensions) {
+                final String domainRulePath = domainRuleExtension.getDomainName() + "/" + domainRuleExtension.getDomainRuleName();
+                final Collection<QFacetRule> facetRules = new ArrayList<QFacetRule>();
+                for (FacetRule facetRule : domainRuleExtension.getFacetRules()) {
+                    facetRules.add(new QFacetRule(facetRule, npRes));
+                }
+                extendedFacetRules.put(domainRulePath, facetRules);
+            }
+        }
     }
 
     /**
@@ -291,8 +323,8 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
 
     /**
      * @see AccessManager#checkPermission(ItemId, int)
-     * @deprecated 
      */
+    @Deprecated
     public void checkPermission(ItemId id, int permissions) throws AccessDeniedException, ItemNotFoundException,
             RepositoryException {
         log.warn("checkPermission(ItemId, int) is DEPRECATED!", new RepositoryException(
@@ -315,7 +347,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
      * @see AccessManager#isGranted(ItemId, int)
      * @deprecated
      */
-    public boolean isGranted(ItemId id, int permissions) throws RepositoryException {
+    public boolean isGranted(final ItemId id, final int permissions) throws RepositoryException {
         checkInitialized();
         if (permissions != Permission.READ) {
             log.warn("isGranted(ItemId, int) is DEPRECATED!", new RepositoryException(
@@ -352,7 +384,8 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
     /**
      * @see AccessManager#isGranted(Path, int)
      */
-    public boolean isGranted(Path absPath, int permissions) throws RepositoryException {
+
+    public boolean isGranted(final Path absPath, final int permissions) throws RepositoryException {
         checkInitialized();
         if (!absPath.isAbsolute()) {
             throw new RepositoryException("Absolute path expected");
@@ -403,7 +436,8 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
      * @see HippoAccessManager#isGranted(Path,int)
      * @see AccessManager#isGranted(Path, Name, int)
      */
-    public boolean isGranted(Path parentPath, Name childName, int permissions) throws RepositoryException {
+
+    public boolean isGranted(final Path parentPath, final Name childName, final int permissions) throws RepositoryException {
         Path p = PathFactoryImpl.getInstance().create(parentPath, childName, true);
         return isGranted(p, permissions);
     }
@@ -432,6 +466,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
      * Always allow.
      * @see AccessManager#canAccess(String)
      */
+
     public boolean canAccess(String workspaceName) throws NoSuchWorkspaceException, RepositoryException {
         // no workspace restrictions yet
         return true;
@@ -454,6 +489,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
         if (allowRead != null) {
             return allowRead.booleanValue();
         }
+
         // because the getItemState(id) call below will recursively call us (canRead(id)) again
         // we provisionally allow that call to succeed here by adding the value 'true' to the cache
         // so that we can then use that item state to do the work of determining if the read access is indeed allowed
@@ -582,12 +618,13 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
             boolean allRulesMatched = true;
 
             // no facet rules means no match
-            if (domainRule.getFacetRules().size() == 0) {
+            final Set<QFacetRule> facetRules = getFacetRules(domainRule);
+            if (facetRules.isEmpty()) {
                 allRulesMatched = false;
                 log.debug("No facet rules found for : {} in domain rule: {}", nodeState.getId(), domainRule);
             }
             // check if node matches ALL of the facet rules
-            for (FacetRule facetRule : domainRule.getFacetRules()) {
+            for (QFacetRule facetRule : facetRules) {
                 if (!matchFacetRule(nodeState, facetRule)) {
                     allRulesMatched = false;
                     log.trace("Rule doesn't match for : {} facet rule: {}", nodeState.getId(), facetRule);
@@ -618,15 +655,28 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
         return isInDomain;
     }
 
+    private Set<QFacetRule> getFacetRules(final DomainRule domainRule) {
+        final String domainRulePath = domainRule.getDomainName() + "/" + domainRule.getName();
+        if (extendedFacetRules != null) {
+            final Collection<QFacetRule> extendedRules = extendedFacetRules.get(domainRulePath);
+            if (extendedRules != null) {
+                final Set<QFacetRule> facetRules = new HashSet<QFacetRule>(domainRule.getFacetRules());
+                facetRules.addAll(extendedRules);
+                return facetRules;
+            }
+        }
+        return domainRule.getFacetRules();
+    }
+
     /**
-     * Check if a node matches the current FacetRule
+     * Check if a node matches the current QFacetRule
      * @param nodeState the state of the node to check
      * @param facetRule the facet rule to check
      * @return true if the node matches the facet rule
      * @throws RepositoryException
-     * @see FacetRule
+     * @see org.hippoecm.repository.security.domain.QFacetRule
      */
-    private boolean matchFacetRule(NodeState nodeState, FacetRule facetRule) throws RepositoryException {
+    private boolean matchFacetRule(NodeState nodeState, QFacetRule facetRule) throws RepositoryException {
         log.trace("Checking node : {} for facet rule: {}", nodeState.getId(), facetRule);
 
         // is this a 'NodeType' facet rule?
@@ -784,15 +834,15 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
     }
 
     /**
-     * Check if a node matches the current FacetRule based on a
+     * Check if a node matches the current QFacetRule based on a
      * check on the properties of the node.
      * @param nodeState the state of the node to check
      * @param rule the facet rule to check
      * @return true if the node matches the facet rule
      * @throws RepositoryException
-     * @see FacetRule
+     * @see org.hippoecm.repository.security.domain.QFacetRule
      */
-    private boolean matchPropertyWithFacetRule(NodeState nodeState, FacetRule rule) throws RepositoryException {
+    private boolean matchPropertyWithFacetRule(NodeState nodeState, QFacetRule rule) throws RepositoryException {
 
         boolean match = false;
 
@@ -913,7 +963,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
      * @return true if the node has the mixin type
      * @throws RepositoryException
      */
-    private boolean hasMixinWithValue(NodeState nodeState, FacetRule rule) throws RepositoryException {
+    private boolean hasMixinWithValue(NodeState nodeState, QFacetRule rule) throws RepositoryException {
         if (!nodeState.hasPropertyName(NameConstants.JCR_MIXINTYPES)) {
             return false;
         }
@@ -1148,7 +1198,8 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
         return null;
     }
 
-    public boolean canRead(Path absPath, ItemId itemId) throws RepositoryException {
+
+    public boolean canRead(final Path absPath, final ItemId itemId) throws RepositoryException {
         // try itemId first if both parameters are set as it is faster
         if (itemId != null) {
             if (itemId.denotesNode()) {
@@ -1205,7 +1256,6 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
 
         /**
          * Create a new LRU cache
-         * @param size max number of cache objects
          */
         private NodeTypeInstanceOfCache() {
         }
@@ -1230,8 +1280,6 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
 
         /**
          * Store key-value in cache
-         * @param id ItemId the key
-         * @param isGranted the value
          */
         synchronized public void put(String type, String instanceOfType, boolean isInstanceOf) {
             Map<String, Boolean> typeMap = map.get(instanceOfType);
@@ -1244,7 +1292,6 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
 
         /**
          * Remove key-value from cache
-         * @param id ItemId the key
          */
         synchronized public void remove(String type, String instanceOfType) {
             Map<String, Boolean> typeMap = map.get(instanceOfType);
@@ -1332,7 +1379,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager, 
      * Check the privileges based on a absolute Path rather than a String representation of a Path
      * @see AccessControlManager#hasPrivileges(String,Privilege[])
      */
-    public boolean hasPrivileges(Path absPath, Privilege[] privileges) throws PathNotFoundException,
+    private boolean hasPrivileges(Path absPath, Privilege[] privileges) throws PathNotFoundException,
             RepositoryException {
         checkInitialized();
 

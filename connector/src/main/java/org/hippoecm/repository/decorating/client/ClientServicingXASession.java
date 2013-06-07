@@ -30,6 +30,7 @@ import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
@@ -53,6 +54,7 @@ import org.apache.jackrabbit.rmi.client.RemoteRepositoryException;
 
 import org.hippoecm.repository.api.HippoSession;
 import org.hippoecm.repository.decorating.remote.RemoteServicingXASession;
+import org.onehippo.repository.security.domain.DomainRuleExtension;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -246,6 +248,11 @@ public class ClientServicingXASession extends ClientSession implements HippoSess
 
     @Override
     public void registerSessionCloseCallback(CloseCallback callback) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Session createSecurityDelegate(final Session session, DomainRuleExtension... domainExtensions) {
         throw new UnsupportedOperationException();
     }
 }
