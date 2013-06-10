@@ -126,13 +126,9 @@ public class AuthorizationQuery {
             if (!facetAuthPrincipal.getPrivileges().contains("jcr:read")) {
                 continue;
             }
-            Iterator<DomainRule> domainRulesIt = facetAuthPrincipal.getRules().iterator();
-            while (domainRulesIt.hasNext()) {
-                DomainRule domainRule = domainRulesIt.next();
-                Iterator<QFacetRule> facetRuleIt = domainRule.getFacetRules().iterator();
+            for (final DomainRule domainRule : facetAuthPrincipal.getRules()) {
                 BooleanQuery facetQuery = new BooleanQuery(true);
-                while (facetRuleIt.hasNext()) {
-                    QFacetRule facetRule = facetRuleIt.next();
+                for (final QFacetRule facetRule : getFacetRules(domainRule, extendedFacetRules)) {
                     Query q = getFacetRuleQuery(facetRule, memberships, facetAuthPrincipal.getRoles(), indexingConfig, nsMappings, session, ntMgr);
                     if (q == null) {
                         continue;
