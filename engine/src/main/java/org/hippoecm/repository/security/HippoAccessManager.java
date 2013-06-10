@@ -16,6 +16,8 @@
 package org.hippoecm.repository.security;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +73,7 @@ import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.dataprovider.HippoNodeId;
 import org.hippoecm.repository.jackrabbit.HippoSessionItemStateManager;
 import org.hippoecm.repository.security.domain.DomainRule;
-import org.hippoecm.repository.security.domain.FacetRule;
+import org.hippoecm.repository.security.domain.QFacetRule;
 import org.hippoecm.repository.security.principals.FacetAuthPrincipal;
 import org.hippoecm.repository.security.principals.GroupPrincipal;
 import org.slf4j.Logger;
@@ -79,7 +81,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * HippoAccessManager based on facet authorization. A subject (user)
- * has a set of {@link FacetAuth}s which hold the domain configuration
+ * has a set of {@link FacetAuthPrincipal}s which hold the domain configuration
  * as defined by a set of {@link DomainRule}s, the roles the subject has
  * for the domain and the JCR permissions the subject has for the domain.
  *
@@ -190,6 +192,8 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
     private final List<String> groupIds = new ArrayList<String>();
     private final List<String> currentDomainRoleIds = new ArrayList<String>();
 
+    private Map<String, Collection<QFacetRule>> extendedFacetRules;
+
     /**
      * The logger
      */
@@ -257,14 +261,29 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
         if (cacheSize < 0) {
             cacheSize = DEFAULT_PERM_CACHE_SIZE;
         }
-        HippoAccessCache.setMaxSize(cacheSize);
-        readAccessCache = HippoAccessCache.getInstance(userId);
+
+        final Set<AuthorizationFilterPrincipal> filterPrincipals = subject.getPrincipals(AuthorizationFilterPrincipal.class);
+        if (filterPrincipals.isEmpty()) {
+            HippoAccessCache.setMaxSize(cacheSize);
+            readAccessCache = HippoAccessCache.getInstance(userId);
+        } else {
+            initializeExtendedFacetRules(filterPrincipals);
+
+            readAccessCache = new HippoAccessCache();
+        }
         readVirtualAccessCache = new WeakHashMap<HippoNodeId, Boolean>();
 
         // we're done
         initialized = true;
 
         log.info("Initialized HippoAccessManager for user " + userId + " with cache size " + cacheSize);
+    }
+
+    private void initializeExtendedFacetRules(final Set<AuthorizationFilterPrincipal> filterPrincipals) throws RepositoryException {
+        extendedFacetRules = new HashMap<String, Collection<QFacetRule>>();
+        for (AuthorizationFilterPrincipal afp : filterPrincipals) {
+            extendedFacetRules.putAll(afp.getFacetRules());
+        }
     }
 
     /**
@@ -292,8 +311,8 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
 
     /**
      * @see AccessManager#checkPermission(ItemId, int)
-     * @deprecated 
      */
+    @Deprecated
     public void checkPermission(ItemId id, int permissions) throws AccessDeniedException, ItemNotFoundException,
             RepositoryException {
         log.warn("checkPermission(ItemId, int) is DEPRECATED!", new RepositoryException(
@@ -316,7 +335,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
      * @see AccessManager#isGranted(ItemId, int)
      * @deprecated
      */
-    public boolean isGranted(ItemId id, int permissions) throws RepositoryException {
+    public boolean isGranted(final ItemId id, final int permissions) throws RepositoryException {
         checkInitialized();
         if (permissions != Permission.READ) {
             log.warn("isGranted(ItemId, int) is DEPRECATED!", new RepositoryException(
@@ -583,12 +602,13 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
             boolean allRulesMatched = true;
 
             // no facet rules means no match
-            if (domainRule.getFacetRules().size() == 0) {
+            final Set<QFacetRule> facetRules = getFacetRules(domainRule);
+            if (facetRules.isEmpty()) {
                 allRulesMatched = false;
                 log.debug("No facet rules found for : {} in domain rule: {}", nodeState.getId(), domainRule);
             }
             // check if node matches ALL of the facet rules
-            for (FacetRule facetRule : domainRule.getFacetRules()) {
+            for (QFacetRule facetRule : facetRules) {
                 if (!matchFacetRule(nodeState, facetRule)) {
                     allRulesMatched = false;
                     log.trace("Rule doesn't match for : {} facet rule: {}", nodeState.getId(), facetRule);
@@ -619,15 +639,28 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
         return isInDomain;
     }
 
+    private Set<QFacetRule> getFacetRules(final DomainRule domainRule) {
+        if (extendedFacetRules != null) {
+            final String domainRulePath = domainRule.getDomainName() + "/" + domainRule.getName();
+            final Collection<QFacetRule> extendedRules = extendedFacetRules.get(domainRulePath);
+            if (extendedRules != null) {
+                final Set<QFacetRule> facetRules = new HashSet<QFacetRule>(domainRule.getFacetRules());
+                facetRules.addAll(extendedRules);
+                return facetRules;
+            }
+        }
+        return domainRule.getFacetRules();
+    }
+
     /**
-     * Check if a node matches the current FacetRule
+     * Check if a node matches the current QFacetRule
      * @param nodeState the state of the node to check
      * @param facetRule the facet rule to check
      * @return true if the node matches the facet rule
      * @throws RepositoryException
-     * @see FacetRule
+     * @see org.hippoecm.repository.security.domain.QFacetRule
      */
-    private boolean matchFacetRule(NodeState nodeState, FacetRule facetRule) throws RepositoryException {
+    private boolean matchFacetRule(NodeState nodeState, QFacetRule facetRule) throws RepositoryException {
         log.trace("Checking node : {} for facet rule: {}", nodeState.getId(), facetRule);
 
         // is this a 'NodeType' facet rule?
@@ -785,15 +818,15 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
     }
 
     /**
-     * Check if a node matches the current FacetRule based on a
+     * Check if a node matches the current QFacetRule based on a
      * check on the properties of the node.
      * @param nodeState the state of the node to check
      * @param facetRule the facet rule to check
      * @return true if the node matches the facet rule
      * @throws RepositoryException
-     * @see FacetRule
+     * @see org.hippoecm.repository.security.domain.QFacetRule
      */
-    private boolean matchPropertyWithFacetRule(NodeState nodeState, FacetRule rule) throws RepositoryException {
+    private boolean matchPropertyWithFacetRule(NodeState nodeState, QFacetRule rule) throws RepositoryException {
 
         boolean match = false;
 
@@ -914,7 +947,7 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
      * @return true if the node has the mixin type
      * @throws RepositoryException
      */
-    private boolean hasMixinWithValue(NodeState nodeState, FacetRule rule) throws RepositoryException {
+    private boolean hasMixinWithValue(NodeState nodeState, QFacetRule rule) throws RepositoryException {
         if (!nodeState.hasPropertyName(NameConstants.JCR_MIXINTYPES)) {
             return false;
         }
@@ -1179,7 +1212,6 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
 
         /**
          * Create a new LRU cache
-         * @param size max number of cache objects
          */
         private NodeTypeInstanceOfCache() {
         }
@@ -1204,8 +1236,6 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
 
         /**
          * Store key-value in cache
-         * @param id ItemId the key
-         * @param isGranted the value
          */
         synchronized public void put(String type, String instanceOfType, boolean isInstanceOf) {
             Map<String, Boolean> typeMap = map.get(instanceOfType);
@@ -1218,7 +1248,6 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
 
         /**
          * Remove key-value from cache
-         * @param id ItemId the key
          */
         synchronized public void remove(String type, String instanceOfType) {
             Map<String, Boolean> typeMap = map.get(instanceOfType);

@@ -47,6 +47,7 @@ import javax.jcr.security.AccessControlManager;
 import javax.jcr.version.VersionException;
 import javax.transaction.xa.XAResource;
 
+import org.onehippo.repository.security.domain.DomainRuleExtension;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -418,5 +419,10 @@ public final class JCASessionHandle implements HippoSession {
     @Override
     public void registerSessionCloseCallback(CloseCallback callback) {
         getSession().registerSessionCloseCallback(callback);
+    }
+
+    @Override
+    public Session createSecurityDelegate(final Session session, final DomainRuleExtension... domainExtensions) throws RepositoryException {
+        throw new RepositoryException("createSecurityDelegate(..) not supported in managed environment");
     }
 }

@@ -82,7 +82,7 @@ public class RepositoryDecorator extends org.hippoecm.repository.decorating.Repo
     public Session login(Credentials credentials, String workspaceName) throws LoginException,
             NoSuchWorkspaceException, RepositoryException {
         Session session = repository.login(credentials, workspaceName);
-        return DecoratorFactoryImpl.getSessionDecorator(session);
+        return DecoratorFactoryImpl.getSessionDecorator(session, credentials);
     }
 
     @Override

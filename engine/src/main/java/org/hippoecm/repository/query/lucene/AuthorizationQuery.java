@@ -36,14 +36,14 @@ import org.apache.jackrabbit.core.query.lucene.NamespaceMappings;
 import org.apache.jackrabbit.spi.Name;
 import org.apache.jackrabbit.spi.commons.conversion.IllegalNameException;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.hippoecm.repository.security.FacetAuthConstants;
 import org.hippoecm.repository.security.domain.DomainRule;
-import org.hippoecm.repository.security.domain.FacetRule;
+import org.hippoecm.repository.security.domain.QFacetRule;
 import org.hippoecm.repository.security.principals.FacetAuthPrincipal;
 import org.hippoecm.repository.security.principals.GroupPrincipal;
 import org.slf4j.Logger;
@@ -101,11 +101,11 @@ public class AuthorizationQuery {
             Iterator<DomainRule> domainRulesIt = facetAuthPrincipal.getRules().iterator();
             while (domainRulesIt.hasNext()) {
                 DomainRule domainRule = domainRulesIt.next();
-                Iterator<FacetRule> facetRuleIt = domainRule.getFacetRules().iterator();
+                Iterator<QFacetRule> facetRuleIt = domainRule.getFacetRules().iterator();
                 BooleanQuery facetQuery = new BooleanQuery(true);
                 boolean hasMatchAllDocsQuery = false;
                 while (facetRuleIt.hasNext()) {
-                    FacetRule facetRule = facetRuleIt.next();
+                    QFacetRule facetRule = facetRuleIt.next();
                     Query q = getFacetRuleQuery(facetRule, facetAuthPrincipal.getRoles());
                     if (q == null) {
                         continue;
@@ -137,7 +137,7 @@ public class AuthorizationQuery {
         return authQuery;
     }
 
-    private Query getFacetRuleQuery(FacetRule facetRule, Set<String> roles) {
+    private Query getFacetRuleQuery(QFacetRule facetRule, Set<String> roles) {
         switch (facetRule.getType()) {
             case PropertyType.STRING:
                 Name nodeName = facetRule.getFacetName();
@@ -240,7 +240,7 @@ public class AuthorizationQuery {
         return QueryHelper.getNoHitsQuery();
     }
 
-    private Query getNodeTypeDescendantQuery(FacetRule facetRule) {
+    private Query getNodeTypeDescendantQuery(QFacetRule facetRule) {
         List<Term> terms = new ArrayList<Term>();
         try {
             NodeType base = ntMgr.getNodeType(facetRule.getValue());
@@ -292,7 +292,7 @@ public class AuthorizationQuery {
         }
     }
 
-    private Query getNodeTypeQuery(String luceneFieldName, FacetRule facetRule) {
+    private Query getNodeTypeQuery(String luceneFieldName, QFacetRule facetRule) {
         String termValue = facetRule.getValue();
         Query nodetypeQuery = new TermQuery(new Term(luceneFieldName, termValue));
         if (facetRule.isEqual()) {

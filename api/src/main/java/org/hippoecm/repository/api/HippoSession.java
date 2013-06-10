@@ -33,6 +33,8 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.version.VersionException;
 import javax.transaction.xa.XAResource;
 
+import org.onehippo.repository.security.domain.DomainRuleExtension;
+
 /**
  * An extension of a plain {@link javax.jcr.Session} based session.  Any session as obtained from the Hippo Repository 2 can be cased to
  * a HippoSession allowing access to the extensions to the JCR API.
@@ -182,6 +184,14 @@ public interface HippoSession extends Session {
      */
     public void registerSessionCloseCallback(CloseCallback callback);
     
+    /**
+     * Create a new Session that contains the union of access control rules
+     * of this Session and the provided session, with the optional addition
+     * of custom domain rules.  Those rules will be added to existing domain
+     * rules, imposing additional restrictions on the session.
+     */
+    Session createSecurityDelegate(Session session, DomainRuleExtension... domainExtensions) throws RepositoryException;
+
     /**
      * @exclude
      * <b>DO NOT USE THIS METHOD.  This call is not yet part of the API.</b><br/>

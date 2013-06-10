@@ -49,6 +49,7 @@ import javax.transaction.xa.XAResource;
 
 import org.apache.jackrabbit.api.XASession;
 import org.hippoecm.repository.api.HippoSession;
+import org.onehippo.repository.security.domain.DomainRuleExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
@@ -495,5 +496,11 @@ public class SessionDecorator implements XASession, HippoSession {
 
     public void registerSessionCloseCallback(CloseCallback callback) {
         session.registerSessionCloseCallback(callback);
+    }
+
+    @Override
+    public Session createSecurityDelegate(final Session session, final DomainRuleExtension... domainExtensions) throws RepositoryException {
+        Session newSession = this.session.createSecurityDelegate(unwrap(session), domainExtensions);
+        return factory.getSessionDecorator(repository, newSession, credentials, workspaceName);
     }
 }

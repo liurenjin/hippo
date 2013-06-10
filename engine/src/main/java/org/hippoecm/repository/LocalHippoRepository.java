@@ -29,22 +29,17 @@ import javax.jcr.AccessDeniedException;
 import javax.jcr.InvalidItemStateException;
 import javax.jcr.ItemExistsException;
 import javax.jcr.LoginException;
-import javax.jcr.NamespaceException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.observation.EventListener;
-import javax.jcr.observation.EventListenerIterator;
-import javax.jcr.observation.ObservationManager;
 import javax.jcr.version.VersionException;
 
 import org.apache.jackrabbit.commons.cnd.ParseException;
 import org.apache.jackrabbit.core.config.RepositoryConfig;
 import org.hippoecm.checker.Checker;
-import org.hippoecm.repository.api.HippoSession;
 import org.hippoecm.repository.decorating.checked.CheckedDecoratorFactory;
 import org.hippoecm.repository.ext.DaemonModule;
 import org.hippoecm.repository.impl.DecoratorFactoryImpl;
@@ -286,8 +281,10 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             ((SecurityManager) jackrabbitRepository.getSecurityManager()).init();
             if (upgradeValidateFlag) {
                 log.warn("post migration cycle validating content");
+                final SimpleCredentials credentials = new SimpleCredentials("system", new char[]{});
                 SessionDecorator session = DecoratorFactoryImpl.getSessionDecorator(
-                        jackrabbitRepository.getRootSession(null).impersonate(new SimpleCredentials("system", new char[]{})));
+                        jackrabbitRepository.getRootSession(null).impersonate(
+                                credentials), credentials);
                 session.postValidation();
                 session.logout();
             }
@@ -366,11 +363,12 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
 
             boolean initializedBefore = initializedBefore(jcrRootSession);
 
+            final SimpleCredentials systemCredentials = new SimpleCredentials("system", new char[]{});
             if (initializedBefore) {
                 switch(upgradeFlag) {
                 case TRUE:
                     jackrabbitRepository.enableVirtualLayer(false);
-                    Session migrateSession = DecoratorFactoryImpl.getSessionDecorator(jcrRootSession.impersonate(new SimpleCredentials("system", new char[] {})));
+                    Session migrateSession = DecoratorFactoryImpl.getSessionDecorator(jcrRootSession.impersonate(systemCredentials), systemCredentials);
                     needsRestart = UpdaterEngine.migrate(migrateSession, jackrabbitRepository.isClustered());
                     migrateSession.logout();
                     if (needsRestart) {
@@ -385,7 +383,7 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             }
 
             if (!initializedBefore || isContentBootstrapEnabled()) {
-                final SessionDecorator bootstrapSession = DecoratorFactoryImpl.getSessionDecorator(jcrRootSession.impersonate(new SimpleCredentials("system", new char[]{})));
+                final SessionDecorator bootstrapSession = DecoratorFactoryImpl.getSessionDecorator(jcrRootSession.impersonate(systemCredentials), systemCredentials);
                 initializeSystemNodeTypes(bootstrapSession);
                 bootstrapContent(bootstrapSession);
                 bootstrapSession.logout();
@@ -394,8 +392,8 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             jackrabbitRepository.enableVirtualLayer(true);
 
             for(DaemonModule module : new Modules<DaemonModule>(Modules.getModules(), DaemonModule.class)) {
-                Session moduleSession = jcrRootSession.impersonate(new SimpleCredentials("system", new char[]{}));
-                moduleSession = DecoratorFactoryImpl.getSessionDecorator(moduleSession);
+                Session moduleSession = jcrRootSession.impersonate(systemCredentials);
+                moduleSession = DecoratorFactoryImpl.getSessionDecorator(moduleSession, systemCredentials);
                 try {
                     module.initialize(moduleSession);
                     daemonModules.add(module);
