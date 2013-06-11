@@ -58,6 +58,7 @@ import org.apache.jackrabbit.core.security.authorization.Permission;
 import org.apache.jackrabbit.core.security.authorization.WorkspaceAccessManager;
 import org.apache.jackrabbit.core.state.ItemState;
 import org.apache.jackrabbit.core.state.ItemStateException;
+import org.apache.jackrabbit.core.state.ItemStateListener;
 import org.apache.jackrabbit.core.state.NoSuchItemStateException;
 import org.apache.jackrabbit.core.state.NodeState;
 import org.apache.jackrabbit.core.state.PropertyState;
@@ -95,7 +96,7 @@ import org.slf4j.LoggerFactory;
  * are granted.
  *
  */
-public class HippoAccessManager implements AccessManager, AccessControlManager {
+public class HippoAccessManager implements AccessManager, AccessControlManager, ItemStateListener {
 
     /** SVN id placeholder */
     @SuppressWarnings("unused")
@@ -1195,6 +1196,33 @@ public class HippoAccessManager implements AccessManager, AccessControlManager {
         } else {
             // itemId and absPath are null
             return false;
+        }
+    }
+
+    @Override
+    public void stateCreated(final ItemState created) {
+    }
+
+    @Override
+    public void stateModified(final ItemState modified) {
+        if (modified.isNode()) {
+            readAccessCache.remove(modified.getId());
+        } else {
+            readAccessCache.remove(modified.getParentId());
+        }
+    }
+
+    @Override
+    public void stateDestroyed(final ItemState destroyed) {
+        if (destroyed.isNode()) {
+            readAccessCache.remove(destroyed.getId());
+        }
+    }
+
+    @Override
+    public void stateDiscarded(final ItemState discarded) {
+        if (discarded.isNode()) {
+            readAccessCache.remove(discarded.getId());
         }
     }
 

@@ -67,6 +67,7 @@ import org.hippoecm.repository.dataprovider.HippoNodeId;
 import org.hippoecm.repository.dataprovider.HippoVirtualProvider;
 import org.hippoecm.repository.dataprovider.ParameterizedNodeId;
 import org.hippoecm.repository.dataprovider.StateProviderContext;
+import org.hippoecm.repository.security.HippoAccessManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +118,7 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
     private static Modules<DataProviderModule> dataProviderModules = null;
     private boolean editFakeMode = false;
     private boolean editRealMode = false;
+    private AccessManager accessManager;
 
     public HippoLocalItemStateManager(SharedItemStateManager sharedStateMgr, EventStateCollectionFactory factory,
                                       ItemStateCacheFactory cacheFactory, String attributeName, NodeTypeRegistry ntReg, boolean enabled,
@@ -214,6 +216,7 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
                     FacetedNavigationEngine<Query, Context> facetedEngine,
                     FacetedNavigationEngine.Context facetedContext) {
         this.session = session;
+        this.accessManager = session.getAccessManager();
         this.hierMgr = session.getHierarchyManager();
         this.facetedEngine = facetedEngine;
         this.facetedContext = facetedContext;
@@ -314,7 +317,7 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
 
     public ItemState getCanonicalItemState(ItemId id) throws NoSuchItemStateException, ItemStateException {
         try {
-            if (!session.getAccessManager().isGranted(id, AccessManager.READ)) {
+            if (!accessManager.isGranted(id, AccessManager.READ)) {
                 return null;
             }
         } catch (RepositoryException ex) {
@@ -897,6 +900,16 @@ public class HippoLocalItemStateManager extends ForkedXAItemStateManager impleme
                     }
                 };
             }
+        }
+    }
+
+    @Override
+    public void stateModified(final ItemState modified) {
+        super.stateModified(modified);
+        if (accessManager != null
+                && modified.getContainer() != this
+                && !cache.isCached(modified.getId())) {
+            ((HippoAccessManager) accessManager).stateModified(modified);
         }
     }
 
