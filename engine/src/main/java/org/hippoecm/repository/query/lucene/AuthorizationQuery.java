@@ -364,26 +364,16 @@ public class AuthorizationQuery {
     }
 
     private Query getNodeNameQuery(QFacetRule facetRule, Set<String> userIds, Set<String> roles, Set<String> memberShips, final NamespaceMappings nsMappings) {
-        try {
-            String fieldName = ServicingNameFormat.getInternalFacetName(NameConstants.JCR_NAME, nsMappings);
-            String value = facetRule.getValue();
-            if (FacetAuthConstants.WILDCARD.equals(value)) {
-                if (facetRule.isEqual()) {
-                    return new MatchAllDocsQuery();
-                } else {
-                    return QueryHelper.getNoHitsQuery();
-                }
-            } else if (FacetAuthConstants.EXPANDER_USER.equals(value)) {
-                return expandUser(fieldName, facetRule, userIds);
-            } else if (FacetAuthConstants.EXPANDER_ROLE.equals(value)) {
-                return expandRole(fieldName, facetRule, roles);
-            } else if (FacetAuthConstants.EXPANDER_GROUP.equals(value)) {
-                return expandGroup(fieldName, facetRule, memberShips);
+        Query nodeNameQuery;
+        String value = facetRule.getValue();
+        if (FacetAuthConstants.WILDCARD.equals(value)) {
+            if (facetRule.isEqual()) {
+                return new MatchAllDocsQuery();
             } else {
                 return QueryHelper.getNoHitsQuery();
             }
         } else if (FacetAuthConstants.EXPANDER_USER.equals(value)) {
-            return expandUser(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, facetRule, session);
+            return expandUser(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, facetRule, userIds);
         } else if (FacetAuthConstants.EXPANDER_ROLE.equals(value)) {
             return expandRole(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, facetRule, roles);
         } else if (FacetAuthConstants.EXPANDER_GROUP.equals(value)) {
