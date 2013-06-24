@@ -17,6 +17,7 @@ package org.hippoecm.repository.standardworkflow;
 
 import java.text.ParseException;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -77,7 +78,7 @@ public class EventLogCleanupModule implements DaemonModule {
     private static final String ITEMS_QUERY_ITEM_TIMEOUT = "SELECT * FROM hippolog:item ORDER BY hippolog:timestamp ASC";
     private static final int EVENT_TYPES = Event.NODE_ADDED | Event.NODE_REMOVED | Event.PROPERTY_ADDED | Event.PROPERTY_CHANGED | Event.PROPERTY_REMOVED;
     private static final long ONE_WEEK = 1000 * 60 * 60 * 24 * 7;
-    private static Boolean buzy = false;
+    private static final AtomicBoolean busy = new AtomicBoolean(false);
 
     private Session session;
     private Scheduler scheduler;
@@ -202,11 +203,8 @@ public class EventLogCleanupModule implements DaemonModule {
         @Override
         public void execute(JobExecutionContext context) throws JobExecutionException {
 
-            synchronized (buzy) {
-                if (buzy) {
-                    return;
-                }
-                buzy = true;
+            if (!busy.compareAndSet(false, true)) {
+                return;
             }
 
             Session session = (Session) context.getMergedJobDataMap().get("session");
@@ -228,7 +226,7 @@ public class EventLogCleanupModule implements DaemonModule {
                 log.error("Error while cleaning up event log", e);
             } finally {
                 unlock(session);
-                buzy = false;
+                busy.set(false);
             }
 
         }
