@@ -70,6 +70,11 @@ public class UriEncodingTest {
         // foreign characters
         assertEquals("хиппо-устойчивости", uri.encode("Хиппо устойчивости"));
         assertEquals("hippo-可持续性", uri.encode("Hippo 可持续性"));
+
+        // trailing dots
+        assertEquals("abc", uri.encode("abc."));
+        assertEquals("a", uri.encode("a..."));
+        assertEquals("e...e", uri.encode("e...e"));
     }
 
     @Test(expected = UnsupportedOperationException.class)
