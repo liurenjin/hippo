@@ -30,6 +30,7 @@
         <nodetype>hippostd:holder</nodetype>
         <nodetype>hippostdpubwf:createdBy</nodetype>
         <nodetype>hippostdpubwf:lastModifiedBy</nodetype>
+        <nodetype>hipposys:password</nodetype>
     </excludefromnodescope>
     
     <nosingleindexterm>
