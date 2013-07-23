@@ -15,7 +15,9 @@
     limitations under the License.
 -->
 <!DOCTYPE configuration SYSTEM "http://jackrabbit.apache.org/dtd/indexing-configuration-1.0.dtd">
-<configuration xmlns:hippostd="http://www.onehippo.org/jcr/hippostd/nt/2.0" xmlns:hippostdpubwf="http://www.onehippo.org/jcr/hippostdpubwf/nt/1.0">
+<configuration xmlns:hippostd="http://www.onehippo.org/jcr/hippostd/nt/2.0" xmlns:hippostdpubwf="http://www.onehippo.org/jcr/hippostdpubwf/nt/1.0"
+               xmlns:sample="http://www.hippoecm.org/sample/nt/1.1"
+               xmlns:hipposys="http://www.onehippo.org/jcr/hipposys/nt/1.0.5">
     <!-- hippo aggregates -->
     <aggregates>
         <nodetype>hippostd:html</nodetype>
@@ -28,12 +30,13 @@
         <nodetype>hippostd:state</nodetype>
         <nodetype>hippostd:stateSummary</nodetype>
         <nodetype>hippostd:holder</nodetype>
+        <nodetype>hipposys:password</nodetype>
     </excludefromnodescope>
     
     <nosingleindexterm>
-        <property>hippostd:content</property>
+        <property>sample:nosingleindexterm</property>
     </nosingleindexterm>
-    
+
     <facets>
         <excludeproperty>hippostd:content</excludeproperty>
     </facets>
