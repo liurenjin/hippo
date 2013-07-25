@@ -368,8 +368,8 @@ public class ServicingNodeIndexer extends NodeIndexer {
                         excludeFieldNamesFromNodeScope.add(resolver.getJCRName(n));
                     } catch (NamespaceException e) {
                         excCount++;
-                        log.debug("Cannot (yet) add name " + n + " to the exlude set from nodescope. Most likely the namespace still has to be registered.",
-                                   e.getMessage());
+                        log.debug("Cannot (yet) add name {} to the exlude set from nodescope. " +
+                                "Most likely the namespace still has to be registered.", n);
                     }
                 }
                 if (excCount == 0) {
@@ -387,8 +387,8 @@ public class ServicingNodeIndexer extends NodeIndexer {
                         excludePropertiesSingleIndexTerm.add(resolver.getJCRName(n));
                     } catch (NamespaceException e) {
                         excCount++;
-                        log.debug("Cannot (yet) add name "  + n  + " to the exlude set for properties not to index a single term from. Most likely the namespace still has to be registered.",
-                                   e.getMessage());
+                        log.debug("Cannot (yet) add name {} to the exlude set for properties not to index a single term from. " +
+                                "Most likely the namespace still has to be registered.", n);
                     }
                 }
                 if (excCount == 0) {

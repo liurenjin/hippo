@@ -23,7 +23,6 @@ import javax.jcr.query.QueryResult;
 
 import org.hippoecm.repository.TestCase;
 import org.hippoecm.repository.api.HippoNodeType;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertFalse;
@@ -31,7 +30,6 @@ import static junit.framework.Assert.assertTrue;
 
 public class ServicingNodeIndexerTest extends TestCase {
 
-    @Ignore
     @Test
     public void testExcludeFromNodeScope() throws RepositoryException {
 
@@ -45,7 +43,7 @@ public class ServicingNodeIndexerTest extends TestCase {
 
             assertFalse(query.execute().getNodes().hasNext());
 
-            query = queryManager.createQuery("//*[@hipposys:password = 'password']", Query.XPATH);
+            query = queryManager.createQuery("//*[@hipposys:password = 'passwordxyz']", Query.XPATH);
             assertTrue(query.execute().getNodes().hasNext());
         } finally {
             if (users.hasNode("tmp-user-xyz")) {
