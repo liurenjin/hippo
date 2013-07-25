@@ -38,11 +38,10 @@ public class ServicingNodeIndexerTest extends TestCase {
         final Node users = session.getNode("/" + HippoNodeType.CONFIGURATION_PATH + "/" + HippoNodeType.USERS_PATH);
         try {
             final Node user = users.addNode("tmp-user-xyz", HippoNodeType.NT_USER);
-            user.setProperty("hipposys:password", "password");
+            user.setProperty("hipposys:password", "passwordxyz");
             session.save();
             final QueryManager queryManager = session.getWorkspace().getQueryManager();
-            Query query = queryManager.createQuery("//*[jcr:contains(. ,'password')]", Query.XPATH);
-            System.out.println(query.execute().getNodes().nextNode().getPath());
+            Query query = queryManager.createQuery("//*[jcr:contains(. ,'passwordxyz')]", Query.XPATH);
 
             assertFalse(query.execute().getNodes().hasNext());
 
