@@ -97,25 +97,4 @@ public class ServicingNodeIndexerTest extends TestCase {
 
     }
 
-    @Ignore
-    @Test
-    public void testExcludeSingleIndexTerm() throws RepositoryException {
-        final Node testNode = session.getRootNode().addNode("test");
-        testNode.setProperty("sample:nosingleindexterm", "foo bar");
-        session.save();
-
-        final QueryManager queryManager = session.getWorkspace().getQueryManager();
-        Query query = queryManager.createQuery("//*[jcr:contains(., 'foo')]", Query.XPATH);
-        assertTrue(query.execute().getNodes().hasNext());
-
-        query = queryManager.createQuery("//*[jcr:contains(@sample:nosingleindexterm, 'foo')]", Query.XPATH);
-        assertTrue(query.execute().getNodes().hasNext());
-
-        query = queryManager.createQuery("//*[@sample:nosingleindexterm = 'foo bar']", Query.XPATH);
-        assertFalse(query.execute().getNodes().hasNext());
-
-        // sorting is not really predictable for fields that do not get indexed as a single term.
-
-    }
-
 }
