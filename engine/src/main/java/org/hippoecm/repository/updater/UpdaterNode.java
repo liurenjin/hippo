@@ -46,6 +46,7 @@ import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
+import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.UnsupportedRepositoryOperationException;
 import javax.jcr.Value;
@@ -727,6 +728,7 @@ final public class UpdaterNode extends UpdaterItem implements Node {
             UpdaterProperty child = new UpdaterProperty(session, propertyParent);
             propertyParent.setProperty(resolveName(name), child);
             child.setValue(value);
+            child.setType(type);
             return child;
         } else {
             Property child = getProperty(name);
@@ -755,7 +757,9 @@ final public class UpdaterNode extends UpdaterItem implements Node {
     }
 
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, values);
+        UpdaterProperty child = (UpdaterProperty) setProperty(name, values);
+        child.setType(type);
+        return child;
     }
 
     public Property setProperty(String name, String[] strings) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -768,7 +772,7 @@ final public class UpdaterNode extends UpdaterItem implements Node {
         for (int i = 0; i < values.length; i++) {
             values[i] = session.valueFactory.createValue(strings[i]);
         }
-        return setProperty(name, values);
+        return setProperty(name, values, PropertyType.STRING);
     }
 
     public Property setProperty(String name, String[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {

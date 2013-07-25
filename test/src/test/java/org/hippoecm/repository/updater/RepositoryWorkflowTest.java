@@ -16,6 +16,7 @@
 package org.hippoecm.repository.updater;
 
 import javax.jcr.Node;
+import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 
 import org.hippoecm.repository.api.HippoWorkspace;
@@ -64,6 +65,20 @@ public class RepositoryWorkflowTest extends TestCase {
             + "[testUpdateModel:folder] > hippostd:folder\n"
             + "+ testUpdateModel:description (testUpdateModel:document) multiple\n"
             + "+ testUpdateModel:folder (testUpdateModel:folder) multiple\n";
+    private String cndNotRelaxed =
+            "<testUpdateModel='http://localhost/testUpdateModel/nt/1.0'>\n"
+            + "<hippostd='http://www.onehippo.org/jcr/hippostd/nt/2.0'>\n"
+            + "<hippo='http://www.onehippo.org/jcr/hippo/nt/2.0'>\n"
+            + "\n"
+            + "[testUpdateModel:document] > hippo:document\n"
+            + "- testUpdateModel:multiValuedProp (string) multiple\n";
+    private String cndRelaxed =
+            "<testUpdateModel='http://localhost/testUpdateModel/nt/1.1'>\n"
+            + "<hippostd='http://www.onehippo.org/jcr/hippostd/nt/2.0'>\n"
+            + "<hippo='http://www.onehippo.org/jcr/hippo/nt/2.0'>\n"
+            + "\n"
+            + "[testUpdateModel:document] > hippo:document, hippostd:relaxed\n";
+
 
     @Override
     @Before
@@ -227,4 +242,23 @@ public class RepositoryWorkflowTest extends TestCase {
        getWorkflow().updateModel("testUpdateModel", cndMoveAggregate2);
        flush();
     }
+
+    @Test
+    public void testStrictToRelaxedPreservesMultivaluedPropertyType() throws Exception {
+        getWorkflow().createNamespace("testUpdateModel", "http://localhost/testUpdateModel/nt/1.0");
+        flush();
+        getWorkflow().updateModel("testUpdateModel", cndNotRelaxed);
+        flush();
+
+        final Node document = session.getNode("/test").addNode("document", "testUpdateModel:document");
+        document.setProperty("testUpdateModel:multiValuedProp", new String[0]);
+        session.save();
+
+        getWorkflow().updateModel("testUpdateModel", cndRelaxed);
+        flush();
+
+        assertEquals(PropertyType.STRING, session.getProperty("/test/document/testUpdateModel:multiValuedProp").getType());
+    }
+
+
 }

@@ -43,6 +43,7 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
     @SuppressWarnings("unused")
     private static final String SVN_ID = "$Id$";
 
+    int type;
     boolean isWeakReference;
     Value value;
     Value[] values;
@@ -52,6 +53,7 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
         super(session, target);
         this.valueFactory = session.valueFactory;
         this.isWeakReference = false;
+        type = PropertyType.UNDEFINED;
     }
 
     UpdaterProperty(UpdaterSession session, Property origin, UpdaterNode target) throws RepositoryException {
@@ -64,6 +66,7 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
             value = origin.getValue();
             values = null;
         }
+        type = origin.getType();
 
         isWeakReference = "hippo:docbase".equals(origin.getName());
 
@@ -181,7 +184,11 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
                 if (UpdaterEngine.log.isDebugEnabled()) {
                     UpdaterEngine.log.debug("commit set multivalue property " + name + " on " + getPath());
                 }
-                origin = ((Node)parent.origin).setProperty(name, values);
+                if (values.length == 0) {
+                    origin = ((Node)parent.origin).setProperty(name, values, type);
+                } else {
+                    origin = ((Node)parent.origin).setProperty(name, values);
+                }
             } else {
                 if (UpdaterEngine.log.isDebugEnabled()) {
                     UpdaterEngine.log.warn("commit set multivalue from singlevalue property " + name + " on " + getPath());
@@ -193,7 +200,11 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
                 if (UpdaterEngine.log.isDebugEnabled()) {
                     UpdaterEngine.log.debug("commit set multivalue property " + name + " on " + getPath());
                 }
-                origin = ((Node)parent.origin).setProperty(name, values);
+                if (values.length == 0) {
+                    origin = ((Node)parent.origin).setProperty(name, values, type);
+                } else {
+                    origin = ((Node)parent.origin).setProperty(name, values);
+                };
             } else {
                 if (UpdaterEngine.log.isDebugEnabled()) {
                     UpdaterEngine.log.debug("commit set singlevalue property " + name + " on " + getPath());
@@ -402,7 +413,7 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
 
     @Deprecated
     public int getType() throws RepositoryException {
-        return PropertyType.UNDEFINED;
+        return type;
     }
 
     public void setValue(Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -423,5 +434,9 @@ final public class UpdaterProperty extends UpdaterItem implements Property {
 
     public Property getProperty() throws ItemNotFoundException, ValueFormatException, RepositoryException {
         throw new UpdaterException("illegal method");
+    }
+
+    public void setType(final int type) {
+        this.type = type;
     }
 }
