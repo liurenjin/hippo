@@ -132,7 +132,6 @@ public class ServicingNodeIndexerTest extends RepositoryTestCase {
     }
 
     @Test
-    @Ignore
     public void testExcludeSingleIndexTermCannotQueryPropEquals() throws RepositoryException {
         String testNodeName = ServicingNodeIndexerTest.class.getSimpleName() + "-test";
         try {
@@ -153,7 +152,6 @@ public class ServicingNodeIndexerTest extends RepositoryTestCase {
     }
 
     @Test
-    @Ignore
     public void testExcludeSingleIndexTermCannotOrderOnProp() throws RepositoryException {
         String testNodeName = ServicingNodeIndexerTest.class.getSimpleName() + "-test";
         try {
