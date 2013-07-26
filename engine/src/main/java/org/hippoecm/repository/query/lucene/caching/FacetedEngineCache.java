@@ -16,11 +16,11 @@
 
 package org.hippoecm.repository.query.lucene.caching;
 
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.lucene.search.DocIdSet;
 import org.hippoecm.repository.FacetedNavigationEngine.Count;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ public class FacetedEngineCache {
     
     private static final Logger log = LoggerFactory.getLogger(FacetedEngineCache.class);
 
-    private final Map<String, DocIdSet> docIdSetCache;
+    private final Map<String, BitSet> docIdSetCache;
     private final Map<FECacheKey, Map<String, Count>> facetValueCountMapCache;
     
     public FacetedEngineCache(int docIdSetCacheSize, int facetValueCountMapCacheSize) {
@@ -42,7 +42,7 @@ public class FacetedEngineCache {
             facetValueCountMapCacheSize = 100;
         }
 
-        docIdSetCache =  Collections.synchronizedMap(new LRUMap<String, DocIdSet>(100, docIdSetCacheSize));
+        docIdSetCache =  Collections.synchronizedMap(new LRUMap<String, BitSet>(100, docIdSetCacheSize));
         facetValueCountMapCache = Collections.synchronizedMap(new LRUMap<FECacheKey, Map<String,Count>>(100, facetValueCountMapCacheSize));
     }
     
@@ -54,11 +54,11 @@ public class FacetedEngineCache {
         facetValueCountMapCache.put(key, facetValueCountMap);
     }
 
-    public DocIdSet getDocIdSet(String key) {
+    public BitSet getDocIdSet(String key) {
         return docIdSetCache.get(key);
     }
 
-    public void putDocIdSet(String key, DocIdSet docIdSet) {
+    public void putDocIdSet(String key, BitSet docIdSet) {
         docIdSetCache.put(key, docIdSet);
     }
 

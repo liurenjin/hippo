@@ -30,7 +30,7 @@ public class FacetedEngineCacheTest {
     public void testCacheMaximumSize() {
         FacetedEngineCache facetedEngineCache = new FacetedEngineCache(250, 500);
         for(int i = 0 ; i < 11000; i++) {
-            facetedEngineCache.putDocIdSet(String.valueOf(i), new DocIdBitSet(new BitSet()));
+            facetedEngineCache.putDocIdSet(String.valueOf(i), new BitSet());
             Object[] objs = new Object[1];
             objs[0] = new Object();
             facetedEngineCache.putFacetValueCountMap(new FacetedEngineCache.FECacheKey(objs), new HashMap<String, Count>());
@@ -43,7 +43,7 @@ public class FacetedEngineCacheTest {
     public void testCacheMinimumSize() {
         // the cache size is at a minimum of 100, even if configured lower
         FacetedEngineCache facetedEngineCache = new FacetedEngineCache(90,90);for(int i = 0 ; i < 11000; i++) {
-            facetedEngineCache.putDocIdSet(String.valueOf(i), new DocIdBitSet(new BitSet()));
+            facetedEngineCache.putDocIdSet(String.valueOf(i), new BitSet());
             Object[] objs = new Object[1];
             objs[0] = new Object();
             facetedEngineCache.putFacetValueCountMap(new FacetedEngineCache.FECacheKey(objs), new HashMap<String, Count>());
