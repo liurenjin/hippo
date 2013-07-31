@@ -607,4 +607,9 @@ final public class UpdaterSession implements HippoSession {
     public Session createSecurityDelegate(final Session session, DomainRuleExtension... domainExtensions) {
         throw new UpdaterException("illegal method");
     }
+
+    @Override
+    public void localRefresh() {
+        throw new UpdaterException("illegal method");
+    }
 }

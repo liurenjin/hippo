@@ -232,6 +232,11 @@ public class SessionImpl extends org.apache.jackrabbit.core.SessionImpl implemen
     }
 
     @Override
+    public void localRefresh() {
+        getItemStateManager().disposeAllTransientItemStates();
+    }
+
+    @Override
     public void finalize() {
         if(log.isDebugEnabled()) {
             super.finalize();

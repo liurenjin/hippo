@@ -240,6 +240,11 @@ public class XASessionImpl extends org.apache.jackrabbit.core.ForkedXASessionImp
         return repositoryContext.getWorkspaceManager().createSession(newSubject, workspaceName);
     }
 
+    @Override
+    public void localRefresh() {
+        getItemStateManager().disposeAllTransientItemStates();
+    }
+
     public void registerSessionCloseCallback(HippoSession.CloseCallback callback) {
         helper.registerSessionCloseCallback(callback);
     }
