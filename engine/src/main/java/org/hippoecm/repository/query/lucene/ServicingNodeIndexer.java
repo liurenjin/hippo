@@ -70,7 +70,8 @@ public class ServicingNodeIndexer extends NodeIndexer {
     private QueryHandlerContext queryHandlerContext;
 
     protected ServicingIndexingConfiguration servicingIndexingConfig;
-
+    private boolean supportSimilarityOnStrings;
+    private boolean supportSimilarityOnBinaries;
 
     public ServicingNodeIndexer(NodeState node, QueryHandlerContext context, NamespaceMappings mappings, Parser parser) {
         super(node, context.getItemStateManager(), mappings, context.getExecutor(), parser);
@@ -165,7 +166,6 @@ public class ServicingNodeIndexer extends NodeIndexer {
                                   boolean includeInNodeIndex, float boost,
                                   boolean useInExcerpt,
                                   boolean includeSingleIndexTerm) {
-
         if (includeSingleIndexTerm) {
             // simple String
             doc.add(createFieldWithoutNorms(fieldName, internalValue,
@@ -185,9 +185,7 @@ public class ServicingNodeIndexer extends NodeIndexer {
             doc.add(f);
 
             if (includeInNodeIndex) {
-                // also create fulltext index of this value
-                boolean store = supportHighlighting && useInExcerpt;
-                f = createFulltextField(internalValue, store, supportHighlighting);
+                f = createFulltextField(internalValue, false, supportSimilarityOnStrings);
                 if (useInExcerpt) {
                     doc.add(f);
                 } else {
@@ -195,6 +193,28 @@ public class ServicingNodeIndexer extends NodeIndexer {
                 }
             }
         }
+    }
+
+    /**
+     * Creates a fulltext field for the string <code>value</code>.
+     *
+     * @param value the string value.
+     * @param store We ignore <code>store</code> as this increases lucene size while at the same time
+     *              excerpts are of poor quality
+     * @param termVectors if a term vector with offsets should be stored.
+     * @return a lucene field.
+     */
+    protected Field createFulltextField(String value,
+                                        boolean store,
+                                        boolean termVectors) {
+        Field.TermVector tv;
+        if (termVectors) {
+            tv = Field.TermVector.YES;
+        } else {
+            tv = Field.TermVector.NO;
+        }
+        return new Field(FieldNames.FULLTEXT, value,
+                    Field.Store.NO, Field.Index.ANALYZED, tv);
     }
 
     @Override
@@ -286,7 +306,8 @@ public class ServicingNodeIndexer extends NodeIndexer {
         log.debug("The '{}' property is present and thus will be used to index this binary", HippoNodeType.HIPPO_TEXT);
         try {
             final String hippoText = IOUtils.toString(hippoTextBinaryValue.internalValue.getStream());
-            doc.add(createFulltextField(hippoText, supportHighlighting, supportHighlighting));
+            // never store for binaries!
+            doc.add(createFulltextField(hippoText, false, supportSimilarityOnBinaries));
         } catch (IOException e) {
             log.warn("Exception during indexing hippo:text binary property", e);
         }
@@ -481,6 +502,14 @@ public class ServicingNodeIndexer extends NodeIndexer {
         } catch (ItemStateException e) {
             throwRepositoryException(e);
         }
+    }
+
+    public void setSupportSimilarityOnStrings(final boolean supportSimilarityOnStrings) {
+        this.supportSimilarityOnStrings = supportSimilarityOnStrings;
+    }
+
+    public void setSupportSimilarityOnBinaries(final boolean supportSimilarityOnBinaries) {
+        this.supportSimilarityOnBinaries = supportSimilarityOnBinaries;
     }
 
     private class BinaryValue {

@@ -65,7 +65,11 @@
       <param name="extractorBackLogSize" value="100"/>
       <param name="textFilterClasses" value="org.apache.jackrabbit.extractor.PlainTextExtractor,org.apache.jackrabbit.extractor.MsWordTextExtractor,org.apache.jackrabbit.extractor.MsExcelTextExtractor,org.apache.jackrabbit.extractor.MsPowerPointTextExtractor,org.apache.jackrabbit.extractor.PdfTextExtractor,org.apache.jackrabbit.extractor.OpenOfficeTextExtractor,org.apache.jackrabbit.extractor.RTFTextExtractor,org.apache.jackrabbit.extractor.HTMLTextExtractor,org.apache.jackrabbit.extractor.XMLTextExtractor"/>
       <param name="excerptProviderClass" value="org.apache.jackrabbit.core.query.lucene.DefaultHTMLExcerpt"/>
+      <!-- supportHighlighting value is ignored, see REPO-716 -->
       <param name="supportHighlighting" value="true"/>
+      <param name="supportSimilarityOnStrings" value="true"/>
+      <param name="supportSimilarityOnBinaries" value="false"/>
+
       <param name="onWorkspaceInconsistency" value="log"/>
       <!-- optional cache parameters for faceted engine. The default size when not configured is 1000 for both parameters -->
       <!-- param name="docIdSetCacheSize" value="1000"/>
