@@ -115,7 +115,7 @@ public class JCRJobStore extends AbstractJobStore {
                 final Node triggerNode = triggersNode.addNode(newTrigger.getName(), HIPPOSCHED_TRIGGER);
                 triggerNode.addMixin("mix:lockable");
 
-                final Calendar fireTime = getCalendarInstance(newTrigger.getNextFireTime());
+                final Calendar fireTime = dateToCalendar(newTrigger.getNextFireTime());
                 triggerNode.setProperty(HIPPOSCHED_NEXTFIRETIME, fireTime);
                 triggerNode.setProperty(HIPPOSCHED_FIRETIME, fireTime);
                 triggerNode.setProperty(HIPPOSCHED_DATA, JcrUtils.createBinaryValueFromObject(session, newTrigger));
@@ -220,7 +220,13 @@ public class JCRJobStore extends AbstractJobStore {
                                 startLockKeepAlive(session, triggerNode.getIdentifier());
                                 JcrUtils.ensureIsCheckedOut(triggerNode, false);
                                 final Trigger trigger = createTriggerFromNode(triggerNode);
-                                triggerNode.getProperty(HIPPOSCHED_NEXTFIRETIME).remove();
+                                final Date nextFireTime = trigger.getNextFireTime();
+                                final Date fireTimeAfter = trigger.getFireTimeAfter(nextFireTime);
+                                if (fireTimeAfter != null) {
+                                    triggerNode.setProperty(HIPPOSCHED_NEXTFIRETIME, dateToCalendar(fireTimeAfter));
+                                } else {
+                                    triggerNode.getProperty(HIPPOSCHED_NEXTFIRETIME).remove();
+                                }
                                 session.save();
                                 return trigger;
                             } catch (IOException e) {
@@ -297,14 +303,9 @@ public class JCRJobStore extends AbstractJobStore {
         synchronized (session) {
             try {
                 final String triggerIdentifier = trigger.getName();
-                final Node triggerNode = session.getNodeByIdentifier(triggerIdentifier);
                 stopLockKeepAlive(triggerIdentifier);
-                final Date nextFire = trigger.getFireTimeAfter(new Date());
-                if(nextFire != null) {
-                    final Calendar nextFireTime = getCalendarInstance(nextFire);
-                    triggerNode.setProperty(HIPPOSCHED_FIRETIME, nextFireTime);
-                    triggerNode.setProperty(HIPPOSCHED_NEXTFIRETIME, nextFireTime);
-                    session.save();
+                final Node triggerNode = session.getNodeByIdentifier(triggerIdentifier);
+                if(triggerNode.hasProperty(HIPPOSCHED_NEXTFIRETIME)) {
                     unlock(session, triggerNode.getPath());
                 } else {
                     final String jobIdentifier = ((JCRJobDetail) jobDetail).getIdentifier();
@@ -347,7 +348,7 @@ public class JCRJobStore extends AbstractJobStore {
         }
     }
 
-    private static Calendar getCalendarInstance(Date date) {
+    private static Calendar dateToCalendar(Date date) {
         final Calendar result = Calendar.getInstance();
         result.setTime(date);
         return result;
@@ -355,7 +356,7 @@ public class JCRJobStore extends AbstractJobStore {
 
     private static NodeIterable getPendingTriggers(Session session, long noLaterThan) {
         try {
-            final Calendar cal = getCalendarInstance(new Date(noLaterThan));
+            final Calendar cal = dateToCalendar(new Date(noLaterThan));
             final QueryManager qMgr = session.getWorkspace().getQueryManager();
             final Query query = qMgr.createQuery(
                     "SELECT * FROM hipposched:trigger WHERE hipposched:nextFireTime <= TIMESTAMP '"
