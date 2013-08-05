@@ -78,6 +78,12 @@ public abstract class RepositoryTestCase {
     protected HippoRepository server = null;
     protected Session session = null;
 
+    static {
+        if (System.getProperty("repo.path") == null) {
+            System.setProperty("repo.path", System.getProperty("java.io.tmpdir"));
+        }
+    }
+
     public RepositoryTestCase() {
     }
 
@@ -166,7 +172,7 @@ public abstract class RepositoryTestCase {
             background.close();
             background = null;
         }
-        final File storage = new File(System.getProperty("repo.path", ""));
+        final File storage = new File(System.getProperty("repo.path", System.getProperty("java.io.tmpdir")));
         String[] files = new String[] { ".lock", "repository", "version", "workspaces" };
         for (final String file : files) {
             FileUtils.deleteQuietly(new File(storage, file));
