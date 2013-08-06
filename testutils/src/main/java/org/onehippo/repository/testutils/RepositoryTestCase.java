@@ -80,7 +80,7 @@ public abstract class RepositoryTestCase {
 
     static {
         if (System.getProperty("repo.path") == null) {
-            System.setProperty("repo.path", System.getProperty("java.io.tmpdir"));
+            System.setProperty("repo.path", getDefaultRepoPath());
         }
     }
 
@@ -172,7 +172,7 @@ public abstract class RepositoryTestCase {
             background.close();
             background = null;
         }
-        final File storage = new File(System.getProperty("repo.path", System.getProperty("java.io.tmpdir")));
+        final File storage = new File(System.getProperty("repo.path", getDefaultRepoPath()));
         String[] files = new String[] { ".lock", "repository", "version", "workspaces" };
         for (final String file : files) {
             FileUtils.deleteQuietly(new File(storage, file));
@@ -310,6 +310,15 @@ public abstract class RepositoryTestCase {
             path = path.substring(1);
         }
         return ((HippoWorkspace) session.getWorkspace()).getHierarchyResolver().getNode(session.getRootNode(), path);
+    }
+
+    private static String getDefaultRepoPath() {
+        final File tmpdir = new File(System.getProperty("java.io.tmpdir"));
+        final File storage = new File(tmpdir, "repository");
+        if (!storage.exists()) {
+            storage.mkdir();
+        }
+        return storage.getAbsolutePath();
     }
 
 }
