@@ -64,9 +64,9 @@ public abstract class AbstractReconfigurableDaemonModule implements Configurable
     @Override
     public final void initialize(final Session session) throws RepositoryException {
         this.session = session;
+        doInitialize(session);
         this.listener = new ModuleConfigurationListener(moduleName, moduleConfigPath);
         this.listener.start();
-        doInitialize(session);
     }
 
     /**
@@ -79,7 +79,9 @@ public abstract class AbstractReconfigurableDaemonModule implements Configurable
     @Override
     public final void shutdown() {
         try {
-            listener.stop();
+            if (listener != null) {
+                listener.stop();
+            }
         } catch (RepositoryException e) {
             log.warn("Error while stopping configuration listener for module {}", moduleName);
         }
@@ -90,6 +92,28 @@ public abstract class AbstractReconfigurableDaemonModule implements Configurable
      * Lifecycle callback method that is called by the repository before shutting down  .
      */
     protected abstract void doShutdown();
+
+    /**
+     * Called when the module configuration has changed. The default implementation
+     * just calls {@link #doConfigure(javax.jcr.Node)} but this method may be overridden.
+     * @param moduleConfig  the new module configuration node
+     * @throws RepositoryException
+     */
+    protected void onConfigurationChange(final Node moduleConfig) throws RepositoryException {
+        doConfigure(moduleConfig);
+    }
+
+    /**
+     * Called by the module configuration listener on event. As an optimization, may be overridden
+     * to return false for events that are actually not a configuration change, so that they don't trigger
+     * a reconfiguration.
+     * @param event event returned by the EventIterator
+     * @return true if this event requires reloading of the configuration
+     * @throws RepositoryException
+     */
+    protected boolean isReconfigureEvent(Event event) throws RepositoryException {
+        return true;
+    }
 
     private class ModuleConfigurationListener implements EventListener {
 
@@ -115,18 +139,32 @@ public abstract class AbstractReconfigurableDaemonModule implements Configurable
 
         @Override
         public void onEvent(final EventIterator events) {
-            try {
-                final Node moduleConfig = JcrUtils.getNodeIfExists(moduleConfigPath, session);
-                if (moduleConfig != null) {
-                    doConfigure(moduleConfig);
-                } else {
-                    log.warn("Configuration for module {} not found", moduleName);
+            boolean reconfigure = false;
+            while (events.hasNext()) {
+                try {
+                    if (isReconfigureEvent(events.nextEvent())) {
+                        reconfigure = true;
+                        break;
+                    }
+                } catch (RepositoryException e) {
+                    log.error("Failed to determine if event is a reconfigure event", e);
                 }
-            } catch (RepositoryException e) {
-                log.error("Failed to reconfigure module {}", moduleName, e);
+            }
+            if (reconfigure) {
+                try {
+                    final Node moduleConfig = JcrUtils.getNodeIfExists(moduleConfigPath, session);
+                    if (moduleConfig != null) {
+                        onConfigurationChange(moduleConfig);
+                    } else {
+                        log.warn("Configuration for module {} not found", moduleName);
+                    }
+                } catch (RepositoryException e) {
+                    log.error("Failed to reconfigure module {}", moduleName, e);
+                }
             }
         }
 
     }
 
 }
+
