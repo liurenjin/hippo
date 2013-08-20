@@ -73,6 +73,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.hippoecm.repository.jackrabbit.HippoSharedItemStateManager;
 import org.hippoecm.repository.jackrabbit.InternalHippoSession;
+import org.hippoecm.repository.query.lucene.AuthorizationFilter;
 import org.hippoecm.repository.query.lucene.AuthorizationQuery;
 import org.hippoecm.repository.query.lucene.FacetFiltersQuery;
 import org.hippoecm.repository.query.lucene.FacetPropExistsQuery;
@@ -233,7 +234,11 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
         }
 
         DocIdSet getAuthorisationIdSet(IndexReader reader) throws IOException {
-            return getAuthorizationFilter(session).getDocIdSet(reader);
+            final AuthorizationFilter authorizationFilter = getAuthorizationFilter(session);
+            if (authorizationFilter == null) {
+                return null;
+            }
+            return authorizationFilter.getDocIdSet(reader);
         }
 
     }
@@ -404,9 +409,15 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                 BitSet authorizationBitSet = cache.getDocIdSet(authorizationQuery.toString());
                 if (authorizationBitSet == null) {
                     final DocIdSet authorisationIdSet = contextImpl.getAuthorisationIdSet(indexReader);
-                    authorizationBitSet = new BitSet(indexReader.maxDoc());
-                    for (DocIdSetIterator iter = authorisationIdSet.iterator(); iter.next();) {
-                        authorizationBitSet.set(iter.doc());
+                    if (authorisationIdSet == null) {
+                        // create a bitset with only 1's
+                        authorizationBitSet = new BitSet(indexReader.maxDoc());
+                        authorizationBitSet.flip(0, indexReader.maxDoc());
+                    } else {
+                        authorizationBitSet = new BitSet(indexReader.maxDoc());
+                        for (DocIdSetIterator iter = authorisationIdSet.iterator(); iter.next();) {
+                            authorizationBitSet.set(iter.doc());
+                        }
                     }
                     cache.putDocIdSet(authorizationQuery.toString(), authorizationBitSet);
                 }
