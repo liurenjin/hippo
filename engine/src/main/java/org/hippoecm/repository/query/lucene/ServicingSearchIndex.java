@@ -70,6 +70,7 @@ import org.apache.jackrabbit.core.state.PropertyState;
 import org.apache.jackrabbit.core.value.InternalValue;
 import org.apache.jackrabbit.spi.Name;
 import org.apache.jackrabbit.spi.Path;
+import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
 import org.apache.jackrabbit.spi.commons.name.NameConstants;
 import org.apache.jackrabbit.spi.commons.query.OrderQueryNode;
 import org.apache.lucene.document.Document;
@@ -538,10 +539,13 @@ public class ServicingSearchIndex extends SearchIndex implements HippoQueryHandl
                             PropertyState propState = (PropertyState) getContext().getItemStateManager().getItemState(id);
                             InternalValue[] values = propState.getValues();
                             if (!indexer.isHippoPath(propName) && indexer.isFacet(propName)) {
+                                final NamePathResolver resolver = indexer.getResolver();
+                                String fieldName = resolver.getJCRName(propState.getName()) + "/"
+                                        + resolver.getJCRName(childNodeEntry.getName());
+                                indexer.indexFacetProperty(doc, fieldName);
+
                                 for (final InternalValue value : values) {
-                                    String s = indexer.getResolver().getJCRName(propState.getName()) + "/"
-                                            + indexer.getResolver().getJCRName(childNodeEntry.getName());
-                                    indexer.addFacetValue(doc, value, s, propState.getName());
+                                    indexer.addFacetValue(doc, value, fieldName, propState.getName());
                                 }
                             }
                         }
