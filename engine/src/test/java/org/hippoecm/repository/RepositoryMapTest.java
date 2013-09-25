@@ -39,6 +39,7 @@ public class RepositoryMapTest extends RepositoryTestCase {
         "jcr:mixinTypes", "hippo:harddocument"
     };
 
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         root = session.getRootNode();
@@ -57,6 +58,15 @@ public class RepositoryMapTest extends RepositoryTestCase {
         build(session, content);
         root = root.getNode("content");
         session.save();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        if (session.nodeExists("/content")) {
+            session.getNode("/content").remove();
+            session.save();
+        }
+        super.tearDown();
     }
 
     @Test
