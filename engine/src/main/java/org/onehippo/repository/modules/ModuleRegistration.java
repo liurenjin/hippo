@@ -69,7 +69,7 @@ class ModuleRegistration {
         return Collections.emptyList();
     }
 
-    boolean requires(ModuleRegistration other) {
+    boolean after(ModuleRegistration other) {
         final Collection<Class<?>> requirements = requirements();
         if (!requirements.isEmpty()) {
             final Collection<Class<?>> provides = other.provides();
@@ -82,38 +82,4 @@ class ModuleRegistration {
         return false;
     }
 
-    int compare(ModuleRegistration other, List<ModuleRegistration> all) {
-        if (this.requires(other)) {
-            return 1;
-        }
-        if (other.requires(this)) {
-            return -1;
-        }
-        final List<ModuleRegistration> dependencies = new ArrayList<ModuleRegistration>();
-        final List<ModuleRegistration> dependents = new ArrayList<ModuleRegistration>();
-        for (ModuleRegistration registration : all) {
-            if (registration == this || registration == other) {
-                continue;
-            }
-            if (this.requires(registration)) {
-                dependencies.add(registration);
-            }
-            if (registration.requires(this)) {
-                dependents.add(registration);
-            }
-        }
-        final ArrayList<ModuleRegistration> rest = new ArrayList<ModuleRegistration>(all);
-        rest.remove(this);
-        for (ModuleRegistration dependency : dependencies) {
-            if (dependency.compare(other, rest) > 0) {
-                return 1;
-            }
-        }
-        for (ModuleRegistration dependent : dependents) {
-            if (dependent.compare(other, rest) < 0) {
-                return -1;
-            }
-        }
-        return 0;
-    }
 }

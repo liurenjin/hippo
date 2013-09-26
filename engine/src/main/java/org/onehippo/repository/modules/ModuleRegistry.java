@@ -20,8 +20,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
 import javax.jcr.RepositoryException;
@@ -47,28 +50,76 @@ class ModuleRegistry {
         final List<ModuleRegistration> updated = new ArrayList<ModuleRegistration>(registrations);
         updated.add(registration);
         checkDependencyGraph(updated);
-        sortModules(updated);
         registrations = updated;
     }
 
-    private void sortModules(final List<ModuleRegistration> registrations) throws RepositoryException {
-        Collections.sort(registrations, new Comparator<ModuleRegistration>() {
-            @Override
-            public int compare(final ModuleRegistration o1, final ModuleRegistration o2) {
-                return o1.compare(o2, registrations);
-            }
-        });
-    }
-
     List<ModuleRegistration> getModuleRegistrations() {
+        registrations = sortModules(registrations);
         return Collections.unmodifiableList(registrations);
     }
 
     List<ModuleRegistration> getModuleRegistrationsReverseOrder() {
+        registrations = sortModules(registrations);
         final ArrayList<ModuleRegistration> moduleRegistrations = new ArrayList<ModuleRegistration>(registrations);
         Collections.reverse(moduleRegistrations);
         return Collections.unmodifiableList(moduleRegistrations);
     }
+
+    /*
+     * Implementation of the Kahn's topological sort algorithm as described at http://en.wikipedia.org/wiki/Topological_sorting
+     */
+    private List<ModuleRegistration> sortModules(final List<ModuleRegistration> regs) {
+        if (regs.size() <= 1) {
+            return regs;
+        }
+        final List<ModuleRegistration> result = new ArrayList<ModuleRegistration>(regs.size());
+        final Queue<ModuleRegistration> startNodes = new LinkedList<ModuleRegistration>();
+        final List<Edge> edges = new LinkedList<Edge>();
+        for (ModuleRegistration reg : regs) {
+            if (reg.requirements().isEmpty()) {
+                startNodes.add(reg);
+            } else {
+                for (ModuleRegistration other : regs) {
+                    if (reg.after(other)) {
+                        edges.add(new Edge(reg, other));
+                    }
+                }
+            }
+        }
+        while (!startNodes.isEmpty()) {
+            ModuleRegistration reg = startNodes.remove();
+            result.add(reg);
+            List<ModuleRegistration> deps = new ArrayList<ModuleRegistration>();
+            for (Edge edge : edges) {
+                if (edge.dependency.equals(reg)) {
+                    deps.add(edge.dependent);
+                }
+            }
+            for (ModuleRegistration dep : deps) {
+                boolean hasMoreDeps = false;
+                Iterator<Edge> iter = edges.iterator();
+                while (iter.hasNext()) {
+                    Edge edge = iter.next();
+                    if (!edge.dependent.equals(dep)) {
+                        continue;
+                    }
+                    if (edge.dependency.equals(reg)) {
+                        iter.remove();
+                        if (hasMoreDeps) {
+                            break;
+                        }
+                    } else {
+                        hasMoreDeps = true;
+                    }
+                }
+                if (!hasMoreDeps) {
+                    startNodes.add(dep);
+                }
+            }
+        }
+        return result;
+    }
+
 
     void checkDependencyGraph(List<ModuleRegistration> registrations) throws RepositoryException {
         final Map<Class<?>, ModuleRegistration> provided = new HashMap<Class<?>, ModuleRegistration>();
@@ -109,4 +160,14 @@ class ModuleRegistry {
             detectCircularDependency(requirement, requirements, new HashSet<ModuleRegistration>(registrations));
         }
     }
+
+    private static class Edge {
+        private final ModuleRegistration dependent;
+        private final ModuleRegistration dependency;
+        private Edge(final ModuleRegistration dependent, final ModuleRegistration dependency) {
+            this.dependent = dependent;
+            this.dependency = dependency;
+        }
+    }
+
 }
