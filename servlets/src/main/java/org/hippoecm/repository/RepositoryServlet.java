@@ -56,6 +56,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.hippoecm.repository.api.HippoNodeIterator;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.api.NodeNameCodec;
 import org.hippoecm.repository.audit.AuditLogger;
@@ -488,11 +489,6 @@ public class RepositoryServlet extends HttpServlet {
 
             String queryString = null;
             if ((queryString = req.getParameter("xpath")) != null || (queryString = req.getParameter("sql")) != null) {
-                writer.println("  <h3>Query executed</h3>");
-                writer.println("  <blockquote>");
-                writer.println(queryString);
-                writer.println("  </blockquote>");
-                writer.println("  <ol>");
                 QueryManager qmgr = session.getWorkspace().getQueryManager();
                 Query query = qmgr.createQuery(queryString, (req.getParameter("xpath") != null ? Query.XPATH
                         : Query.SQL));
@@ -501,11 +497,21 @@ public class RepositoryServlet extends HttpServlet {
                     query.setLimit(Long.parseLong(strLimit));
                 }
                 QueryResult result = query.execute();
-                for (NodeIterator iter = result.getNodes(); iter.hasNext();) {
+                HippoNodeIterator iter = (HippoNodeIterator) result.getNodes();
+                
+                writer.println("  <h3>Query executed</h3>");
+                writer.println("  <blockquote>");
+                writer.println(StringEscapeUtils.escapeHtml(queryString));
+                writer.println("  </blockquote>");
+                writer.println("  Number of results found: " + iter.getTotalSize());
+                writer.println("  <ol>");
+               
+                while (iter.hasNext()) {
                     Node resultNode = iter.nextNode();
-                    writer.println("    <li>");
                     if (resultNode != null) {
-                        writer.println(resultNode.getPath());
+                        writer.print("    <li>");
+                        writer.print(resultNode.getPath());
+                        writer.println("</li>");
                     }
                 }
                 writer.println("  </ol><hr/><table summary=\"searchresult\">");
@@ -518,8 +524,8 @@ public class RepositoryServlet extends HttpServlet {
                     writer.println("</th>");
                 }
                 writer.println("  </tr>");
-                for (RowIterator iter = result.getRows(); iter.hasNext();) {
-                    Row resultRow = iter.nextRow();
+                for (RowIterator rowIter = result.getRows(); rowIter.hasNext();) {
+                    Row resultRow = rowIter.nextRow();
                     writer.println("    <tr>");
                     if (resultRow != null) {
                         Value[] values = resultRow.getValues();
