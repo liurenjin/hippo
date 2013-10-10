@@ -32,6 +32,41 @@ public class JcrUtilsTest extends RepositoryTestCase {
         super.setUp();
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void copyToDescendantFails() throws Exception {
+        final String[] content = new String[] {
+                "/test", "nt:unstructured",
+                "/test/node", "nt:unstructured"
+        };
+        build(session, content);
+        final Node node = session.getNode("/test/node");
+        JcrUtils.copy(session, "/test/node", "/test/node/foo");
+    }
+
+    @Test
+    public void copyToSiblingSucceeds() throws Exception {
+        final String[] content = new String[]{
+                "/test", "nt:unstructured",
+                "/test/node", "nt:unstructured"
+        };
+        build(session, content);
+        final Node node = session.getNode("/test/node");
+        JcrUtils.copy(session, "/test/node", "/test/foo");
+        assertTrue(session.nodeExists("/test/foo"));
+    }
+
+    @Test
+    public void copyToSiblingWithSameNamePrefixSucceeds() throws Exception {
+        final String[] content = new String[]{
+                "/test", "nt:unstructured",
+                "/test/node", "nt:unstructured"
+        };
+        build(session, content);
+        final Node node = session.getNode("/test/node");
+        JcrUtils.copy(session, "/test/node", "/test/node-foo");
+        assertTrue(session.nodeExists("/test/node-foo"));
+    }
+
     @Test
     public void testCopyNodeWithAutoCreatedChildNode() throws Exception {
         final String[] content = new String[] {
