@@ -47,6 +47,7 @@ import javax.jcr.observation.EventListenerIterator;
 import javax.jcr.observation.ObservationManager;
 import javax.jcr.util.TraversingItemVisitor;
 import javax.jcr.version.VersionException;
+import javax.jcr.version.VersionManager;
 
 import org.hippoecm.repository.HierarchyResolverImpl;
 import org.hippoecm.repository.api.DocumentManager;
@@ -117,6 +118,11 @@ public class WorkspaceDecorator extends org.hippoecm.repository.decorating.Works
         } finally {
             postMountEnabled(true);
         }
+    }
+
+    @Override
+    public VersionManager getVersionManager() throws UnsupportedRepositoryOperationException, RepositoryException {
+        return new VersionManagerDecorator(workspace.getVersionManager(), this);
     }
 
     @Override
