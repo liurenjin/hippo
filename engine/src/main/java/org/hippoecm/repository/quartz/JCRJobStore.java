@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
-import javax.jcr.Property;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.Value;
@@ -47,9 +46,11 @@ import org.apache.jackrabbit.util.ISO8601;
 import org.hippoecm.repository.quartz.workflow.WorkflowJobDetail;
 import org.hippoecm.repository.util.JcrUtils;
 import org.hippoecm.repository.util.NodeIterable;
+import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
 import org.quartz.JobPersistenceException;
 import org.quartz.SchedulerConfigException;
+import org.quartz.SimpleTrigger;
 import org.quartz.Trigger;
 import org.quartz.core.SchedulingContext;
 import org.quartz.spi.ClassLoadHelper;
@@ -218,17 +219,7 @@ public class JCRJobStore extends AbstractJobStore {
                         if (lock(session, triggerNode.getPath())) {
                             try {
                                 startLockKeepAlive(session, triggerNode.getIdentifier());
-                                JcrUtils.ensureIsCheckedOut(triggerNode, false);
-                                final Trigger trigger = createTriggerFromNode(triggerNode);
-                                final Date nextFireTime = trigger.getNextFireTime();
-                                final Date fireTimeAfter = trigger.getFireTimeAfter(nextFireTime);
-                                if (fireTimeAfter != null) {
-                                    triggerNode.setProperty(HIPPOSCHED_NEXTFIRETIME, dateToCalendar(fireTimeAfter));
-                                } else {
-                                    triggerNode.getProperty(HIPPOSCHED_NEXTFIRETIME).remove();
-                                }
-                                session.save();
-                                return trigger;
+                                return createTriggerFromNode(triggerNode);
                             } catch (IOException e) {
                                 log.error("Failed to read trigger for job " + jobNode.getPath(), e);
                                 stopLockKeepAlive(triggerNode.getIdentifier());
@@ -253,6 +244,13 @@ public class JCRJobStore extends AbstractJobStore {
         final Trigger trigger = (Trigger) createObjectFromBinaryValue(triggerNode.getProperty(HIPPOSCHED_DATA).getValue());
         trigger.setName(triggerNode.getIdentifier());
         trigger.setJobName(triggerNode.getParent().getParent().getIdentifier());
+        final Date nextFireTime = JcrUtils.getDateProperty(triggerNode, HIPPOSCHED_NEXTFIRETIME, Calendar.getInstance()).getTime();
+        if (trigger instanceof CronTrigger) {
+            ((CronTrigger) trigger).setNextFireTime(nextFireTime);
+        }
+        else if (trigger instanceof SimpleTrigger) {
+            ((SimpleTrigger) trigger).setNextFireTime(nextFireTime);
+        }
         return trigger;
     }
 
@@ -264,11 +262,6 @@ public class JCRJobStore extends AbstractJobStore {
                 final String triggerIdentifier = trigger.getName();
                 stopLockKeepAlive(triggerIdentifier);
                 final Node triggerNode = session.getNodeByIdentifier(triggerIdentifier);
-                final Property fireTimeProperty = JcrUtils.getPropertyIfExists(triggerNode, HIPPOSCHED_FIRETIME);
-                if (fireTimeProperty != null) {
-                    triggerNode.setProperty(HIPPOSCHED_NEXTFIRETIME, fireTimeProperty.getValue());
-                }
-                session.save();
                 unlock(session, triggerNode.getPath());
             } catch (ItemNotFoundException e) {
                 log.info("Trigger no longer exists: " + trigger.getName());
@@ -305,7 +298,11 @@ public class JCRJobStore extends AbstractJobStore {
                 final String triggerIdentifier = trigger.getName();
                 stopLockKeepAlive(triggerIdentifier);
                 final Node triggerNode = session.getNodeByIdentifier(triggerIdentifier);
-                if(triggerNode.hasProperty(HIPPOSCHED_NEXTFIRETIME)) {
+                final Date nextFire = trigger.getFireTimeAfter(new Date());
+                if(nextFire != null) {
+                    final Calendar nextFireTime = dateToCalendar(nextFire);
+                    triggerNode.setProperty(HIPPOSCHED_NEXTFIRETIME, nextFireTime);
+                    session.save();
                     unlock(session, triggerNode.getPath());
                 } else {
                     final String jobIdentifier = ((JCRJobDetail) jobDetail).getIdentifier();

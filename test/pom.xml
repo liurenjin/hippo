@@ -191,6 +191,7 @@
                 <exclude>**/StampedeTest.java</exclude>
                 <exclude>**/integration/*.java</exclude>
                 <exclude>**/UpdaterExecutorTest.java</exclude>
+                <exclude>**/SchedulerTest.java</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -248,6 +249,7 @@
                     <include>**/integration/VersioningWorkflowTest.java</include>
                     <include>**/StampedeTest.java</include>
                     <include>**/UpdaterExecutorTest.java</include>
+                    <include>**/SchedulerTest.java</include>
                   </includes>
                 </configuration>
               </execution>
