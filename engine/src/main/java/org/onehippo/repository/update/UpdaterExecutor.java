@@ -68,29 +68,13 @@ public class UpdaterExecutor implements EventListener {
     private final UpdaterExecutionReport report;
     private volatile boolean cancelled;
 
-    public UpdaterExecutor(Node updaterNode, final Session session) throws RepositoryException, IllegalAccessException, InstantiationException, ClassNotFoundException, IOException, IllegalArgumentException, CompilationFailedException {
+    public UpdaterExecutor(Node updaterNode, final Session session) throws Exception {
         this.session = session;
         this.background = session.impersonate(new SimpleCredentials("system", new char[] {}));
         report = new UpdaterExecutionReport();
         try {
             updaterInfo = new UpdaterInfo(updaterNode);
-        } catch (RepositoryException e) {
-            // log to report only: client needs to know about this but caller needs to do exception handling
-            report.getLogger().error("Cannot run updater: " + e.getClass().getName() + ": " + e.getMessage());
-            throw e;
-        } catch (IllegalAccessException e) {
-            report.getLogger().error("Cannot run updater: " + e.getClass().getName() + ": " + e.getMessage());
-            throw e;
-        } catch (InstantiationException e) {
-            report.getLogger().error("Cannot run updater: " + e.getClass().getName() + ": " + e.getMessage());
-            throw e;
-        } catch (ClassNotFoundException e) {
-            report.getLogger().error("Cannot run updater: " + e.getClass().getName() + ": " + e.getMessage());
-            throw e;
-        } catch (IllegalArgumentException e) {
-            report.getLogger().error("Cannot run updater: " + e.getClass().getName() + ": " + e.getMessage());
-            throw e;
-        } catch (CompilationFailedException e) {
+        } catch (Exception e) {
             report.getLogger().error("Cannot run updater: " + e.getClass().getName() + ": " + e.getMessage());
             throw e;
         } finally {

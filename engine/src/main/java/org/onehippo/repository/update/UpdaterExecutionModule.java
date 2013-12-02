@@ -137,20 +137,10 @@ public class UpdaterExecutionModule implements DaemonModule, EventListener {
                 session = UpdaterExecutionModule.this.session.impersonate(new SimpleCredentials("system", new char[] {}));
                 updaterExecutor = new UpdaterExecutor(updaterNode, session);
                 updaterExecutor.execute();
-            } catch (RepositoryException e) {
-                log.error(e.getClass().getName() + ": " + e.getMessage(), e);
-            } catch (IllegalAccessException e) {
-                log.error(e.getClass().getName() + ": " + e.getMessage(), e);
-            } catch (InstantiationException e) {
-                log.error(e.getClass().getName() + ": " + e.getMessage(), e);
-            } catch (ClassNotFoundException e) {
-                log.error(e.getClass().getName() + ": " + e.getMessage(), e);
-            } catch (IllegalArgumentException e) {
-                log.error(e.getClass().getName() + ": " + e.getMessage(), e);
-            } catch (CompilationFailedException e) {
-                log.error(e.getClass().getName() + ": " + e.getMessage(), e);
             } catch (IOException e) {
                 log.error("Could not execute updater: log initialization failed", e);
+            } catch (Exception e) {
+                log.error(e.getClass().getName() + ": " + e.getMessage(), e);
             } finally {
                 if (updaterExecutor != null) {
                     updaterExecutor.destroy();
