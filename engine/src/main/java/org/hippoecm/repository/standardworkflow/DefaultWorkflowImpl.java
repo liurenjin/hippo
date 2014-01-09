@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2008-2014 Hippo B.V. (http://www.onehippo.com)
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
+import org.apache.commons.lang.StringUtils;
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.api.Localized;
@@ -35,9 +36,13 @@ import org.hippoecm.repository.api.WorkflowContext;
 import org.hippoecm.repository.api.WorkflowException;
 import org.hippoecm.repository.ext.InternalWorkflow;
 import org.hippoecm.repository.impl.NodeDecorator;
+import org.hippoecm.repository.util.JcrUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultWorkflowImpl implements DefaultWorkflow, EditableWorkflow, InternalWorkflow {
 
+    private static final Logger log = LoggerFactory.getLogger(DefaultWorkflowImpl.class);
     private static final long serialVersionUID = 1L;
 
     WorkflowContext context;
@@ -98,19 +103,21 @@ public class DefaultWorkflowImpl implements DefaultWorkflow, EditableWorkflow, I
     public void archive() throws WorkflowException, MappingException, RepositoryException, RemoteException {
         Document folder = getWorkflowContext().getDocument("embedded", document.getIdentity());
         Workflow workflow = getWorkflowContext().getWorkflow(getFolderWorkflowCategory(), folder);
-        if(workflow instanceof FolderWorkflow)
+        if (workflow instanceof FolderWorkflow) {
             ((FolderWorkflow)workflow).archive(document);
-        else
-            throw new WorkflowException("cannot delete document which is not contained in a folder");
+        } else {
+            throw new WorkflowException("cannot archive document which is not contained in a folder");
+        }
     }
 
     public void rename(String newName) throws WorkflowException, MappingException, RepositoryException, RemoteException {
         Document folder = getWorkflowContext().getDocument("embedded", document.getIdentity());
         Workflow workflow = getWorkflowContext().getWorkflow(getFolderWorkflowCategory(), folder);
-        if(workflow instanceof FolderWorkflow)
+        if (workflow instanceof FolderWorkflow) {
             ((FolderWorkflow)workflow).rename(document, newName);
-        else
-            throw new WorkflowException("cannot delete document which is not contained in a folder");
+        } else {
+            throw new WorkflowException("cannot rename document which is not contained in a folder");
+        }
     }
 
     public void localizeName(Localized localized, String newName) throws WorkflowException, MappingException, RepositoryException, RemoteException {
@@ -142,8 +149,9 @@ public class DefaultWorkflowImpl implements DefaultWorkflow, EditableWorkflow, I
         Localized localized;
         if (handle != null) {
             localized = ((NodeDecorator)subject).getLocalized(locale);
-        } else
+        } else {
             localized = Localized.getInstance(locale);
+        }
         localizeName(node, localized, newName);
     }
 
@@ -166,9 +174,53 @@ public class DefaultWorkflowImpl implements DefaultWorkflow, EditableWorkflow, I
             if (localized == null) {
                 localized = Localized.getInstance();
             }
-        } else
+        } else {
             localized = Localized.getInstance();
+        }
         localizeName(node, localized, newName);
+    }
+
+    @Override
+    public void replaceAllLocalizedNames(final String newName) throws WorkflowException, MappingException, RepositoryException, RemoteException {
+        Node node, handle;
+        if (subject.isNodeType(HippoNodeType.NT_HANDLE)) {
+            handle = node = subject;
+        } else {
+            handle = subject.getParent();
+            if (handle.isNodeType(HippoNodeType.NT_HANDLE)) {
+                node = handle;
+            } else {
+                handle = null;
+                node = subject;
+            }
+        }
+        Localized localized;
+        if (handle != null) {
+            localized = ((NodeDecorator)subject).getLocalized(null);
+            if (localized == null) {
+                localized = Localized.getInstance();
+            }
+        } else {
+            localized = Localized.getInstance();
+        }
+        removeAllLocaleSpecificNames(node);
+        localizeName(node, localized, newName);
+    }
+
+    private void removeAllLocaleSpecificNames(final Node node) {
+        try {
+            final NodeIterator nodeIterator = node.getNodes(HippoNodeType.HIPPO_TRANSLATION);
+            while (nodeIterator.hasNext()) {
+                final Node translationNode = nodeIterator.nextNode();
+                final String language = translationNode.getProperty(HippoNodeType.HIPPO_LANGUAGE).getString();
+                if (StringUtils.isNotBlank(language)) {
+                    log.debug("Removing translation node '{}' for locale '{}'", JcrUtils.getNodePathQuietly(translationNode), language);
+                    translationNode.remove();
+                }
+            }
+        } catch (RepositoryException e) {
+            log.info("Failed to remove locale-specific names of '{}'", JcrUtils.getNodePathQuietly(node));
+        }
     }
 
     private void localizeName(Node node, Localized localized, String newName) throws RepositoryException {
