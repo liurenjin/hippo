@@ -40,6 +40,8 @@ public interface DefaultWorkflow extends CopyWorkflow {
       throws WorkflowException, MappingException, RepositoryException, RemoteException;
     public void localizeName(String newName)
       throws WorkflowException, MappingException, RepositoryException, RemoteException;
+    public void replaceAllLocalizedNames(String newName)
+            throws WorkflowException, MappingException, RepositoryException, RemoteException;
     public void move(Document target, String newName)
         throws WorkflowException, MappingException, RepositoryException, RemoteException;
 }

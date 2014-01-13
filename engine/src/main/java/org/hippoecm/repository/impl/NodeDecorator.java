@@ -1,6 +1,6 @@
 /*
- *  Copyright 2008 Hippo.
- * 
+ *  Copyright 2008-2014 Hippo B.V. (http://www.onehippo.com)
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 package org.hippoecm.repository.impl;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -47,14 +48,19 @@ import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 
 import org.hippoecm.repository.DerivedDataEngine;
+import org.apache.commons.lang.StringUtils;
 import org.hippoecm.repository.api.HippoNode;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.api.Localized;
 import org.hippoecm.repository.decorating.DecoratorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NodeDecorator extends org.hippoecm.repository.decorating.NodeDecorator implements HippoNode {
     @SuppressWarnings("unused")
     private static final String SVN_ID = "$Id$";
+
+    private static final Logger log = LoggerFactory.getLogger(NodeDecorator.class);
 
     protected NodeDecorator(DecoratorFactory factory, Session session, Node node) {
         super(factory, session, node);
@@ -324,6 +330,53 @@ public class NodeDecorator extends org.hippoecm.repository.decorating.NodeDecora
             }
         }
         return getName();
+    }
+
+    @Override
+    public Map<Localized, String> getLocalizedNames() throws RepositoryException {
+        final Node node = getTranslatedNodeOrNull();
+        if (node == null) {
+            return Collections.emptyMap();
+        }
+        return getLocalizedNames(node);
+    }
+
+    private Node getTranslatedNodeOrNull() throws RepositoryException {
+        Node node = this;
+        if (!node.isNodeType(HippoNodeType.NT_TRANSLATED) && node.isNodeType(HippoNodeType.NT_DOCUMENT)) {
+            final Node handle = node.getParent();
+            if (handle.isNodeType(HippoNodeType.NT_HANDLE) && handle.isNodeType(HippoNodeType.NT_TRANSLATED)) {
+                node = handle;
+            }
+        }
+        return node;
+    }
+
+    private Map<Localized, String> getLocalizedNames(final Node node) throws RepositoryException {
+        final Map<Localized, String> localizedNames = new LinkedHashMap<Localized, String>();
+
+        final NodeIterator nodeIterator = node.getNodes(HippoNodeType.HIPPO_TRANSLATION);
+        while (nodeIterator.hasNext()) {
+            final Node translationNode = nodeIterator.nextNode();
+            final String language = translationNode.getProperty(HippoNodeType.HIPPO_LANGUAGE).getString();
+
+            try {
+                final Localized localized = getLocalizedForLanguage(language);
+                final String message = translationNode.getProperty(HippoNodeType.HIPPO_MESSAGE).getString();
+                localizedNames.put(localized, message);
+            } catch (IllegalArgumentException e) {
+                log.info("Ignoring localized name for language '{}'", language, e);
+            }
+        }
+        return localizedNames;
+    }
+
+    private Localized getLocalizedForLanguage(final String language) throws IllegalArgumentException {
+        if (StringUtils.isBlank(language)) {
+            return Localized.getInstance();
+        }
+        final Locale locale = new Locale(language);
+        return Localized.getInstance(locale);
     }
 
     public Localized getLocalized(Locale locale) throws RepositoryException {

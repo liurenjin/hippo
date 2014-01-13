@@ -18,6 +18,7 @@ package org.hippoecm.repository.decorating.checked;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.Calendar;
+import java.util.Map;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.Binary;
@@ -94,6 +95,12 @@ public class NodeDecorator extends ItemDecorator implements HippoNode {
     public String getLocalizedName(Localized localized) throws RepositoryException {
         check();
         return node.getLocalizedName(localized);
+    }
+
+    @Override
+    public Map<Localized, String> getLocalizedNames() throws RepositoryException {
+        check();
+        return node.getLocalizedNames();
     }
 
     public static Node unwrap(Node node) {

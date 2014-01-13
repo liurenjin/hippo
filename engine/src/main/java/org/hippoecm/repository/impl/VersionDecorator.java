@@ -1,6 +1,6 @@
 /*
- *  Copyright 2008 Hippo.
- * 
+ *  Copyright 2008-2014 Hippo B.V. (http://www.onehippo.com)
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -15,9 +15,11 @@
  */
 package org.hippoecm.repository.impl;
 
+import java.util.Map;
+
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import javax.jcr.Node;
 import javax.jcr.version.Version;
 
 import org.hippoecm.repository.api.HippoNode;
@@ -50,5 +52,10 @@ public class VersionDecorator extends org.hippoecm.repository.decorating.Version
 
     public String getLocalizedName(Localized localized) throws RepositoryException {
         return ((HippoNode)version).getLocalizedName(localized);
+    }
+
+    @Override
+    public Map<Localized, String> getLocalizedNames() throws RepositoryException {
+        return ((HippoNode)version).getLocalizedNames();
     }
 }

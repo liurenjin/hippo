@@ -1,6 +1,6 @@
 /*
- *  Copyright 2008 Hippo.
- * 
+ *  Copyright 2008-2014 Hippo B.V. (http://www.onehippo.com)
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -16,8 +16,8 @@
 package org.hippoecm.repository.decorating.server;
 
 import java.rmi.RemoteException;
+import java.util.Map;
 
-import java.util.Locale;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 
@@ -50,6 +50,15 @@ public class ServerServicingNode extends ServerNode implements RemoteServicingNo
     public String getLocalizedName(Localized localized) throws RepositoryException, RemoteException {
         try {
             return node.getLocalizedName(localized);
+        } catch(RepositoryException ex) {
+            throw getRepositoryException(ex);
+        }
+    }
+
+    @Override
+    public Map<Localized, String> getLocalizedNames() throws RepositoryException, RemoteException {
+        try {
+            return node.getLocalizedNames();
         } catch(RepositoryException ex) {
             throw getRepositoryException(ex);
         }

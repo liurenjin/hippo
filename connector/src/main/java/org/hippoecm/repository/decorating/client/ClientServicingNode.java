@@ -1,6 +1,6 @@
 /*
- *  Copyright 2008 Hippo.
- * 
+ *  Copyright 2008-2014 Hippo B.V. (http://www.onehippo.com)
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -16,8 +16,9 @@
 package org.hippoecm.repository.decorating.client;
 
 import java.rmi.RemoteException;
-
 import java.util.Locale;
+import java.util.Map;
+
 import javax.jcr.NamespaceException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -65,6 +66,15 @@ public class ClientServicingNode extends ClientNode implements HippoNode {
     public String getLocalizedName(Localized localized) throws RepositoryException {
         try {
             return remote.getLocalizedName(localized);
+        } catch (RemoteException ex) {
+            throw new RemoteRepositoryException(ex);
+        }
+    }
+
+    @Override
+    public Map<Localized, String> getLocalizedNames() throws RepositoryException {
+        try {
+            return remote.getLocalizedNames();
         } catch (RemoteException ex) {
             throw new RemoteRepositoryException(ex);
         }
