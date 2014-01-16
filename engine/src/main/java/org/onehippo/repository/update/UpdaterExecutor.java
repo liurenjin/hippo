@@ -42,7 +42,6 @@ import javax.jcr.query.QueryResult;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.jackrabbit.core.id.NodeId;
-import org.codehaus.groovy.control.CompilationFailedException;
 import org.hippoecm.repository.api.HippoNode;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.util.JcrUtils;
@@ -414,8 +413,9 @@ public class UpdaterExecutor implements EventListener {
             report.startBatch();
             saveReport(session.getNodeByIdentifier(updaterInfo.getIdentifier()));
         }
-
-        throttle(updaterInfo.getThrottle());
+        if (batchCompleted) {
+            throttle(updaterInfo.getThrottle());
+        }
     }
 
     private void saveReport(final Node node) throws RepositoryException {
