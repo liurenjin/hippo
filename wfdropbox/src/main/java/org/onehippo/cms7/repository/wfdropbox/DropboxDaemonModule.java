@@ -125,7 +125,7 @@ public class DropboxDaemonModule extends Thread implements DaemonModule {
             nodeIds.clear();
             synchronized (session) {
                 try {
-                    Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [wfdropbox:call]", Query.JCR_SQL2);
+                    Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM wfdropbox:call", Query.SQL);
                     QueryResult result = query.execute();
                     for (NodeIterator nodeIter = result.getNodes(); nodeIter.hasNext();) {
                         Node found = nodeIter.nextNode();
