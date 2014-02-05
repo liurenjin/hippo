@@ -17,7 +17,6 @@ package org.hippoecm.repository.standardworkflow;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -42,7 +41,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.Value;
 import javax.jcr.ValueFormatException;
-import javax.jcr.Workspace;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NodeDefinition;
 import javax.jcr.nodetype.NodeType;
@@ -66,7 +64,6 @@ import org.hippoecm.repository.api.WorkflowContext;
 import org.hippoecm.repository.api.WorkflowException;
 import org.hippoecm.repository.ext.InternalWorkflow;
 import org.hippoecm.repository.util.JcrUtils;
-import org.onehippo.repository.ManagerServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -253,10 +250,14 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
             }
             if (renames.containsKey(values[i])) {
                 String[] oldValues = renames.get(values[i]);
-                String[] newValues = new String[oldValues.length + 1];
-                System.arraycopy(oldValues, 0, newValues, 0, oldValues.length);
-                newValues[oldValues.length] = newValue;
-                renames.put(values[i], newValues);
+                if(oldValues == null) {
+                    renames.put(values[i], new String[] { newValue });
+                } else {
+                    String[] newValues = new String[oldValues.length + 1];
+                    System.arraycopy(oldValues, 0, newValues, 0, oldValues.length);
+                    newValues[oldValues.length] = newValue;
+                    renames.put(values[i], newValues);
+                }
             } else {
                 if (newValue == null) {
                     renames.put(values[i], null);
