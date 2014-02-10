@@ -428,7 +428,10 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                 if (removeNodecontent(session, contextNodePath, false)) {
                     initializeNodecontent(session, root, contentStream, contentResource);
                     if (index != -1) {
-                        reorderNode(session, contextNodePath, index);
+                        // REPO-917: don't reorder if the node was already reordered during the import
+                        if (isLastSibling(session, contextNodePath)) {
+                            reorderNode(session, contextNodePath, index);
+                        }
                     }
                 } else {
                     getLogger().error("Cannot reload item " + node.getPath() + ": removing node failed");
@@ -439,7 +442,16 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         } else {
             initializeNodecontent(session, root, contentStream, contentResource);
         }
+    }
 
+    private boolean isLastSibling(final Session session, final String contextNodePath) throws RepositoryException {
+        final Node node = session.getNode(contextNodePath);
+        Node sibling = null;
+        final NodeIterator siblings = node.getParent().getNodes();
+        while (siblings.hasNext()) {
+            sibling = siblings.nextNode();
+        }
+        return sibling != null && sibling.isSame(node);
     }
 
     private void reorderNode(final Session session, final String nodePath, final int index) throws RepositoryException {
