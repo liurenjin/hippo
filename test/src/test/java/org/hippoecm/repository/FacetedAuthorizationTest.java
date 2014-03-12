@@ -1013,10 +1013,18 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
     }
 
     @Test
-    public void testOptionalFacet() throws RepositoryException {
-        Node testData = session.getRootNode().getNode(TEST_DATA_NODE);
+    public void testOptionalFacetPlain() throws RepositoryException {
+        testOptionalFacet("optionalvalue", "optionalvalue");
+    }
 
-        testData.getNode("readdoc0").getNode("subread").setProperty("optionalfacet", "optionalvalue");
+    @Test
+    public void testOptionalFacetWithExpander() throws RepositoryException {
+        testOptionalFacet("__group__", TEST_GROUP_ID);
+    }
+
+    private void testOptionalFacet(final String optionalFacetValue, final String optionalPropertyValue) throws RepositoryException {
+        Node testData = session.getRootNode().getNode(TEST_DATA_NODE);
+        testData.getNode("readdoc0").getNode("subread").setProperty("optionalfacet", optionalPropertyValue);
 
         final Node otherDoc = testData.getNode("readdoc0").addNode("subhidden", "hippo:ntunstructured");
         otherDoc.setProperty("optionalfacet", "incorrectvalue");
@@ -1026,7 +1034,7 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
         Node dr = readDomain.getNode("hippo:domainrule");
         Node fr = dr.addNode("hippo:facetrule", HippoNodeType.NT_FACETRULE);
         fr.setProperty(HippoNodeType.HIPPO_FACET, "optionalfacet");
-        fr.setProperty(HippoNodeType.HIPPOSYS_VALUE, "optionalvalue");
+        fr.setProperty(HippoNodeType.HIPPOSYS_VALUE, optionalFacetValue);
         fr.setProperty(HippoNodeType.HIPPOSYS_TYPE, "String");
         fr.setProperty(HippoNodeType.HIPPOSYS_FILTER, true);
 
