@@ -204,11 +204,11 @@ public class AuthorizationQuery {
                                         new TermQuery(new Term(ServicingFieldNames.FACET_PROPERTIES_SET, internalNameTerm)));
                             }
                         } else if (FacetAuthConstants.EXPANDER_USER.equals(value)) {
-                            tq = expandUser(fieldName, facetRule, userIds);
+                            tq = expandUser(fieldName, userIds);
                         } else if (FacetAuthConstants.EXPANDER_ROLE.equals(value)) {
-                            tq = expandRole(fieldName, facetRule, roles);
+                            tq = expandRole(fieldName, roles);
                         } else if (FacetAuthConstants.EXPANDER_GROUP.equals(value)) {
-                            tq = expandGroup(fieldName, facetRule, memberships);
+                            tq = expandGroup(fieldName, memberships);
                         } else {
                             tq = new TermQuery(new Term(fieldName, value));
                         }
@@ -368,22 +368,22 @@ public class AuthorizationQuery {
                 return QueryHelper.getNoHitsQuery();
             }
         } else if (FacetAuthConstants.EXPANDER_USER.equals(value)) {
-            return expandUser(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, facetRule, userIds);
+            nodeNameQuery =  expandUser(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, userIds);
         } else if (FacetAuthConstants.EXPANDER_ROLE.equals(value)) {
-            return expandRole(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, facetRule, roles);
+            nodeNameQuery =  expandRole(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, roles);
         } else if (FacetAuthConstants.EXPANDER_GROUP.equals(value)) {
-            return expandGroup(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, facetRule, memberShips);
+            nodeNameQuery =  expandGroup(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, memberShips);
         } else {
             nodeNameQuery = new TermQuery(new Term(ServicingFieldNames.HIPPO_SORTABLE_NODENAME, value));
-            if (facetRule.isEqual()) {
-                return nodeNameQuery;
-            } else {
-                return QueryHelper.negateQuery(nodeNameQuery);
-            }
+        }
+        if (facetRule.isEqual()) {
+            return nodeNameQuery;
+        } else {
+            return QueryHelper.negateQuery(nodeNameQuery);
         }
     }
 
-    private Query expandUser(final String field, final QFacetRule facetRule, final Set<String> userIds) {
+    private Query expandUser(final String field, final Set<String> userIds) {
         if (userIds.isEmpty()) {
             return QueryHelper.getNoHitsQuery();
         }
@@ -401,7 +401,7 @@ public class AuthorizationQuery {
         }
     }
 
-    private Query expandGroup(final String field, final QFacetRule facetRule, final Set<String> memberships) {
+    private Query expandGroup(final String field, final Set<String> memberships) {
         // boolean OR query of groups
         if (memberships.isEmpty()) {
             return QueryHelper.getNoHitsQuery();
@@ -414,7 +414,7 @@ public class AuthorizationQuery {
         return b;
     }
 
-    private Query expandRole(final String field, final QFacetRule facetRule, final Set<String> roles) {
+    private Query expandRole(final String field, final Set<String> roles) {
         // boolean Or query of roles
         if (roles.size() == 0) {
             return QueryHelper.getNoHitsQuery();
