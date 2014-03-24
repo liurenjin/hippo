@@ -220,7 +220,7 @@ public class UpdaterExecutor implements EventListener {
         final String query = updaterInfo.getQuery();
         if (query == null) {
             info("No query set. Skipping query visitor.");
-            return null;
+            return Collections.emptyList();
         }
         try {
             final QueryManager queryManager = session.getWorkspace().getQueryManager();
