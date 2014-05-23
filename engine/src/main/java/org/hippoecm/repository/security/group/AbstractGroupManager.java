@@ -160,7 +160,6 @@ public abstract class AbstractGroupManager implements GroupManager {
      * Helper for building group path including the groupname itself. Takes care of the encoding
      * of the path AND the groupId (the eventual node name)
      * @param rawGroupId unencoded groupId
-     * @param dirLevels
      * @return the fully encoded normalized path
      */
     private String buildGroupPath(String rawGroupId) {
@@ -272,6 +271,7 @@ public abstract class AbstractGroupManager implements GroupManager {
             NodeIterator groupsIter = result.getNodes();
             while (groupsIter.hasNext()) {
                 String groupId = groupsIter.nextNode().getName();
+                groupId = NodeNameCodec.decode(groupId);
                 log.debug("User '{}' is member of group: {}", userId, groupId);
                 memberships.add(groupId);
             }

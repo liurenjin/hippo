@@ -70,6 +70,7 @@ import org.apache.jackrabbit.core.security.principal.PrincipalProvider;
 import org.apache.jackrabbit.core.security.principal.PrincipalProviderRegistry;
 import org.apache.jackrabbit.core.security.principal.ProviderRegistryImpl;
 import org.hippoecm.repository.api.HippoNodeType;
+import org.hippoecm.repository.api.NodeNameCodec;
 import org.hippoecm.repository.security.domain.Domain;
 import org.hippoecm.repository.security.group.DummyGroupManager;
 import org.hippoecm.repository.security.group.GroupManager;
@@ -407,6 +408,8 @@ public class SecurityManager implements HippoSecurityManager {
      */
     private Set<Domain> getDomainsForGroup(String rawGroupId, String providerId) throws RepositoryException {
         String groupId = sanitizeGroupId(rawGroupId, providerId);
+        groupId = NodeNameCodec.decode(groupId).replaceAll("'", "''");
+
         Set<Domain> domains = new HashSet<Domain>();
         StringBuilder statement = new StringBuilder();
         statement.append("SELECT * FROM ").append(HippoNodeType.NT_AUTHROLE);
