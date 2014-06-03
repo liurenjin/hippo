@@ -22,6 +22,7 @@ import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 
 import org.hippoecm.repository.api.HippoNodeType;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.onehippo.repository.testutils.RepositoryTestCase;
@@ -35,6 +36,7 @@ public class ImpersonateTest extends RepositoryTestCase {
     private static final String TEST_USER_ID = "testuser";
     private static final String TEST_USER_PASS = "password";
 
+    @After
     public void cleanup() throws RepositoryException  {
         Node config = session.getRootNode().getNode(HippoNodeType.CONFIGURATION_PATH);
         Node users = config.getNode(HippoNodeType.USERS_PATH);

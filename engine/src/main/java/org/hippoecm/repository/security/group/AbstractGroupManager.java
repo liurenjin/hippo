@@ -246,7 +246,7 @@ public abstract class AbstractGroupManager implements GroupManager {
     }
 
     public final Set<String> getMemberships(String rawUserId, String providerId) {
-        String userId = sanitizeId(rawUserId);
+        String userId = NodeNameCodec.decode(sanitizeId(rawUserId));
         Set<String> memberships = new HashSet<String>();
 
         StringBuffer statement = new StringBuffer();
@@ -255,7 +255,7 @@ public abstract class AbstractGroupManager implements GroupManager {
         statement.append("//element");
         statement.append("(*, ").append(HippoNodeType.NT_GROUP).append(")");
         statement.append('[');
-        statement.append("(@").append(HippoNodeType.HIPPO_MEMBERS).append(" = '").append(userId).append("'");
+        statement.append("(@").append(HippoNodeType.HIPPO_MEMBERS).append(" = '").append(userId.replace("'", "''")).append("'");
         statement.append(" or @").append(HippoNodeType.HIPPO_MEMBERS).append(" = '*')");
         if (providerId != null) {
             statement.append(" and @");
