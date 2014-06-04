@@ -17,6 +17,7 @@ package org.hippoecm.repository.security;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -379,6 +380,9 @@ public class SecurityManager implements HippoSecurityManager {
      * @param rawUserId the unparsed userId
      */
     private Set<Domain> getDomainsForUser(String rawUserId, String providerId) throws RepositoryException {
+        if (rawUserId == null) {
+            return Collections.emptySet();
+        }
         String userId = NodeNameCodec.decode(sanitizeUserId(rawUserId, providerId));
         Set<Domain> domains = new HashSet<Domain>();
         StringBuilder statement = new StringBuilder();
@@ -587,18 +591,12 @@ public class SecurityManager implements HippoSecurityManager {
     }
 
     private void assignGroupPrincipals(Set<Principal> principals, String userId, String providerId) {
-        if (userId == null) {
-            return;
-        }
         for (String groupId : getMemberships(userId, providerId)) {
             principals.add(new GroupPrincipal(groupId));
         }
     }
 
     private void assignFacetAuthPrincipals(Set<Principal> principals, String userId, String providerId) throws RepositoryException {
-        if (userId == null) {
-            return;
-        }
         // Find domains that the user is associated with
         Set<Domain> userDomains = new HashSet<Domain>();
         userDomains.addAll(getDomainsForUser(userId, providerId));
