@@ -41,6 +41,7 @@ import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
 import javax.jcr.version.VersionIterator;
 
+import org.hippoecm.repository.HippoStdNodeType;
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.HippoNode;
 import org.hippoecm.repository.api.HippoNodeType;
@@ -161,13 +162,12 @@ public class VersionWorkflowImpl extends Document implements VersionWorkflow, In
             if (prop.getName().startsWith("jcr:frozen") || prop.getName().startsWith("jcr:uuid") ||
                 prop.getName().equals(HippoNodeType.HIPPO_RELATED) ||
                 prop.getName().equals(HippoNodeType.HIPPO_COMPUTE) ||
-                prop.getName().equals(HippoNodeType.HIPPO_PATHS)) {
+                prop.getName().equals(HippoNodeType.HIPPO_PATHS) ||
+                prop.getName().equals(HippoStdNodeType.HIPPOSTD_STATE) ||
+                prop.getName().equals(HippoStdNodeType.HIPPOSTD_HOLDER)) {
                 continue;
             }
-            if (target.hasProperty(prop.getName())) {
-                continue;
-            }
-            
+
             if (prop.getDefinition().isMultiple()) {
                 boolean isProtected = true;
                 for (NodeType nodeType : nodeTypes) {
