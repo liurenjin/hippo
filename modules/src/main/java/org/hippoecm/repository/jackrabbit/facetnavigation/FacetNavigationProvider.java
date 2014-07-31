@@ -227,6 +227,12 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
         FacetedNavigationEngine.Query initialQuery;
         try {
             initialQuery = (docbase != null ? facetedEngine.parse(initialQueryString.toString()) : null);
+            if(initialQuery == null || initialQuery.toString() == null) {
+                log.warn("Docbase '{}' is not a correct uuid", docbase);
+                // we always need to populate the count
+                populateCount(state, 0);
+                return state;
+            }
         } catch (IllegalArgumentException e) {
             log.warn("Return state. Error parsing initial query:  '{}'", e.getMessage());
             // we always need to populate the count

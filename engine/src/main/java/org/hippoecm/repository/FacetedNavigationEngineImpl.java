@@ -810,6 +810,11 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
             // no constraints. Return null
             return null;
         }
+        if(query == null) {
+            log.error("Query is null");
+            return null;
+        }
+
         Filter queryFilter = filterCache.getIfPresent(query);
         if (queryFilter != null) {
             log.debug("For query '{}' getting queryFilter from cache", query);
