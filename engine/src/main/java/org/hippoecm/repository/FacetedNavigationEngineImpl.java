@@ -400,7 +400,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
 
             FacetFiltersQuery facetFiltersQuery = null;
             if (initialQuery != null && initialQuery.facetFilters != null) {
-                facetFiltersQuery = new FacetFiltersQuery(initialQuery.facetFilters, nsMappings, this.getTextAnalyzer(), this.getSynonymProvider()); 
+                facetFiltersQuery = new FacetFiltersQuery(initialQuery.facetFilters, nsMappings, this.getTextAnalyzer(), this.getSynonymProvider());
             }
 
             final BooleanQuery authorizationQuery = contextImpl.getAuthorizationQuery();
@@ -434,13 +434,13 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                }
 
                for (String namespacedFacet : resultset.keySet()) {
-                   
+
                    // Not a search involving scoring, thus compute bitsets for facetFiltersQuery & freeSearchInjectedSort
-                  
+
                    if (facetFiltersQuery != null && facetFiltersQuery.getQuery() != null) {
                        matchingDocs.and(getFilterBitSet(facetFiltersQuery.getQuery(), cache, indexReader));
                    }
-                   
+
                    if (openQuery != null) {
                        QueryAndSort queryAndSort = openQuery.getLuceneQueryAndSort(contextImpl);
                        matchingDocs.and(getFilterBitSet(queryAndSort.query, cache, indexReader));
@@ -478,18 +478,18 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
 
                     // this method populates the facetValueCountMap for the current facet
                     Object[] keyObjects = {matchingDocs,propertyName,parsedFacet};
-                       
+
                     FECacheKey feKey = new FECacheKey(keyObjects);
                     Map<String, Count> facetValueCountMap = cache.getFacetValueCountMap(feKey);
-                    if(facetValueCountMap == null) { 
+                    if(facetValueCountMap == null) {
                         facetValueCountMap =  new HashMap<String, Count>();
                         populateFacetValueCountMap(propertyName, parsedFacet, facetValueCountMap, matchingDocs, indexReader);
                         cache.putFacetValueCountMap(feKey, facetValueCountMap);
-                    } 
-                    
+                    }
+
                     Map<String, Count> resultFacetValueCountMap = resultset.get(namespacedFacet);
                     resultFacetValueCountMap.putAll(facetValueCountMap);
-                    
+
                     // set the numHits value
                     if (hitsRequested.isFixedDrillPath()) {
                         return new ResultImpl(numHits, null);
@@ -505,7 +505,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                     if (facetFiltersQuery != null && facetFiltersQuery.getQuery().clauses().size() > 0) {
                         matchingDocs.and(getFilterBitSet(facetFiltersQuery.getQuery(), cache, indexReader));
                     }
-                    
+
                     if (openQuery != null) {
                         QueryAndSort queryAndSort = openQuery.getLuceneQueryAndSort(contextImpl);
                         matchingDocs.and(getFilterBitSet(queryAndSort.query, cache, indexReader));
@@ -513,15 +513,15 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
 
                     int size = matchingDocs.cardinality();
                     return new ResultImpl(size, null);
-                    
+
                 } else {
-                    
+
                     BooleanQuery searchQuery = new BooleanQuery(false);
                     Sort freeSearchInjectedSort = null;
                     if (facetFiltersQuery != null && facetFiltersQuery.getQuery().clauses().size() > 0) {
                         searchQuery.add(facetFiltersQuery.getQuery(), Occur.MUST);
                     }
-                    
+
                     if (openQuery != null) {
                         QueryAndSort queryAndSort = openQuery.getLuceneQueryAndSort(contextImpl);
                         if(queryAndSort.query != null) {
@@ -567,7 +567,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                     boolean sortScoreAscending = false;
                     // if the sort is on score descending, we can set it to null as this is the default and more efficient                  
                     if(sort != null && sort.getSort().length == 1 && sort.getSort()[0].getType() == SortField.SCORE) {
-                        
+
                         if(sort.getSort()[0].getReverse()) {
                             sortScoreAscending = true;
                         } else {
@@ -575,7 +575,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                             sort = null;
                         }
                     }
-                    
+
                     TopDocs tfDocs;
                     org.apache.lucene.search.Query query = searchQuery;
                     if(searchQuery.clauses().size() == 0) {
@@ -583,7 +583,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                        // searchQuery.add(new MatchAllDocsQuery(), Occur.MUST);
                         query = new MatchAllDocsQuery();
                      }
-                     
+
                     if (sort == null) {
                         // when sort == null, use this search without search as is more efficient
                         Filter filterToApply = new BitSetFilter(matchingDocs);
@@ -608,9 +608,9 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                             query = new MatchAllDocsQuery();
                             tfDocs = searcher.search(query, filterToApply, fetchTotal, sort);
                         }
-                        
+
                     }
-                    
+
                     ScoreDoc[] hits = tfDocs.scoreDocs;
                     int position = hitsRequested.getOffset();
 
@@ -633,7 +633,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
         } catch (IOException e) {
             log.error("Error during creating view: ", e);
         } finally {
-            
+
             if (indexReader != null) {
                 try {
                     // do not call indexReader.close() as ref counting is taken care of by  
@@ -686,7 +686,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
         try {
             IndexReader indexReader = getIndexReader(false);
             IndexSearcher searcher = new IndexSearcher(indexReader);
-           
+
             TopDocs tfDocs = searcher.search(query, (Filter) null, 1000);
             ScoreDoc[] hits = tfDocs.scoreDocs;
             int position = 0;
@@ -717,7 +717,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
         if(log.isDebugEnabled()) {
             start = System.currentTimeMillis();
         }
-        
+
         if (matchingDocs.cardinality() == 0) {
             return;
         }
@@ -822,7 +822,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
                 termEnum.close();
             }
         }
-        
+
         if(log.isDebugEnabled()) {
             log.debug("Populating the FacetValueCountMap took '{}' ms for  #'{}' facet values (in case of ranges, this is not the same as all unique facet values, but only the number of ranges) ", (System.currentTimeMillis() - start), facetValueCountMap.size());
         }
@@ -830,6 +830,10 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
 
     private BitSet getFilterBitSet(org.apache.lucene.search.Query query, FacetedEngineCache cache, IndexReader indexReader) throws IOException {
         if (!(query instanceof BooleanQuery) || ((BooleanQuery)query).clauses().size() > 0) {
+            if (query == null) {
+                log.error("Query is null");
+                return null;
+            }
             String key = query.toString();
             BitSet queryBitSet = cache.getDocIdSet(key);
             if (queryBitSet == null) {
@@ -841,7 +845,7 @@ public class FacetedNavigationEngineImpl extends ServicingSearchIndex
         }
         return null;
     }
-    
+
     /**
      * Creates a path with a single element out of the given <code>name</code>.
      *
