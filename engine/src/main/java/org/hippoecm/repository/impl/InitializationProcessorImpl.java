@@ -659,15 +659,25 @@ public class InitializationProcessorImpl implements InitializationProcessor {
 
     private boolean shouldReload(final Node temp, final Node existing, final String moduleVersion, final String existingModuleVersion, final String itemVersion, final String existingItemVersion) throws RepositoryException {
         if (!isReloadable(temp)) {
+            getLogger().debug("Item {} is not reloadable", temp.getName());
             return false;
         }
-        if (itemVersion != null && !isNewerVersion(itemVersion, existingItemVersion)) {
-            return false;
+        if (itemVersion != null) {
+            final boolean isNewer = isNewerVersion(itemVersion, existingItemVersion);
+            getLogger().debug("Comparing item versions of item {}: new version = {}; old version = {}; newer = {}", temp.getName(), itemVersion, existingItemVersion, isNewer);
+            if (!isNewer) {
+                return false;
+            }
         }
-        if (itemVersion == null && !isNewerVersion(moduleVersion, existingModuleVersion)) {
-            return false;
+        if (itemVersion == null) {
+            final boolean isNewer = isNewerVersion(moduleVersion, existingModuleVersion);
+            getLogger().debug("Comparing module versions of item {}: new module version {}; old module version = {}; newer = {}", temp.getName(), moduleVersion, existingModuleVersion, isNewer);
+            if (!isNewer) {
+                return false;
+            }
         }
-        if (existing.hasProperty(HippoNodeType.HIPPO_STATUS) && existing.getProperty(HippoNodeType.HIPPO_STATUS).getString().equals("disabled")) {
+        if ("disabled".equals(JcrUtils.getStringProperty(existing, HippoNodeType.HIPPO_STATUS, null))) {
+            getLogger().debug("Item {} is disabled", temp.getName());
             return false;
         }
         return true;
