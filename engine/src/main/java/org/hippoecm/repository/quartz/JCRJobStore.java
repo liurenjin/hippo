@@ -218,8 +218,12 @@ public class JCRJobStore extends AbstractJobStore {
                         }
                         if (lock(session, triggerNode.getPath())) {
                             try {
-                                startLockKeepAlive(session, triggerNode.getIdentifier());
-                                return createTriggerFromNode(triggerNode);
+                                if (isPendingTrigger(triggerNode, noLaterThan)) {
+                                    startLockKeepAlive(session, triggerNode.getIdentifier());
+                                    return createTriggerFromNode(triggerNode);
+                                } else {
+                                    unlock(session, triggerNode.getPath());
+                                }
                             } catch (IOException e) {
                                 log.error("Failed to read trigger for job " + jobNode.getPath(), e);
                                 stopLockKeepAlive(triggerNode.getIdentifier());
@@ -238,6 +242,11 @@ public class JCRJobStore extends AbstractJobStore {
             }
         }
         return null;
+    }
+
+    private boolean isPendingTrigger(final Node triggerNode, final long noLaterThan) throws RepositoryException {
+        final java.util.Calendar nextFireTime = JcrUtils.getDateProperty(triggerNode, HIPPOSCHED_NEXTFIRETIME, null);
+        return nextFireTime != null && nextFireTime.compareTo(dateToCalendar(new Date(noLaterThan))) <= 0;
     }
 
     private Trigger createTriggerFromNode(final Node triggerNode) throws RepositoryException, ClassNotFoundException, IOException {
@@ -352,6 +361,8 @@ public class JCRJobStore extends AbstractJobStore {
     }
 
     private static NodeIterable getPendingTriggers(Session session, long noLaterThan) {
+        // make sure the index is up to date
+        refreshSession(session);
         try {
             final Calendar cal = dateToCalendar(new Date(noLaterThan));
             final QueryManager qMgr = session.getWorkspace().getQueryManager();
