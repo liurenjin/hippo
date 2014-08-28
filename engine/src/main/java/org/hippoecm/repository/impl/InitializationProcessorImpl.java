@@ -26,6 +26,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -82,6 +84,8 @@ import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_SEQUENCE;
+
 public class InitializationProcessorImpl implements InitializationProcessor {
 
 
@@ -108,12 +112,33 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             "SELECT * FROM hipposys:initializeitem " +
                     "WHERE jcr:path = '/hippo:configuration/hippo:initialize/%' AND " +
                     HippoNodeType.HIPPO_STATUS + " = 'pending' " +
-                    "ORDER BY " + HippoNodeType.HIPPO_SEQUENCE + " ASC";
+                    "ORDER BY " + HIPPO_SEQUENCE + " ASC";
 
     private final static String GET_OLD_INITIALIZE_ITEMS = "SELECT * FROM hipposys:initializeitem " +
             "WHERE jcr:path = '/hippo:configuration/hippo:initialize/%' AND (" +
             HippoNodeType.HIPPO_TIMESTAMP + " IS NULL OR " +
             HippoNodeType.HIPPO_TIMESTAMP + " < {})";
+
+    private static final Double NO_HIPPO_SEQUENCE = new Double(-1.0);
+
+    private static final Comparator<Node> initializeItemComparator = new Comparator<Node>() {
+
+        @Override
+        public int compare(final Node n1, final Node n2) {
+            try {
+                final Double s1 = JcrUtils.getDoubleProperty(n1, HIPPO_SEQUENCE, NO_HIPPO_SEQUENCE);
+                final Double s2 = JcrUtils.getDoubleProperty(n2, HIPPO_SEQUENCE, NO_HIPPO_SEQUENCE);
+                final int result = s1.compareTo(s2);
+                if (result != 0) {
+                    return result;
+                }
+                return n1.getName().compareTo(n2.getName());
+            } catch (RepositoryException e) {
+                log.error("Error comparing initialize item nodes", e);
+            }
+            return 0;
+        }
+    };
 
     private Logger logger;
 
@@ -184,7 +209,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     }
 
     private void processInitializeItems(Session session, List<Node> initializeItems, boolean dryRun) {
-
+        Collections.sort(initializeItems, initializeItemComparator);
         try {
             if (session == null || !session.isLive()) {
                 getLogger().warn("Unable to refresh initialize nodes, no session available");

@@ -21,7 +21,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -86,19 +85,6 @@ public class ReferenceWorkspaceImpl implements ReferenceWorkspace {
                     contentItems.add(initializeItem);
                 }
             }
-
-            Collections.sort(contentItems, new Comparator<Node>() {
-                @Override
-                public int compare(final Node n1, final Node n2) {
-                    try {
-                        double s1 = n1.getProperty(HippoNodeType.HIPPO_SEQUENCE).getDouble();
-                        double s2 = n2.getProperty(HippoNodeType.HIPPO_SEQUENCE).getDouble();
-                        return s1 == s2 ? 0 : s1 < s2 ? -1 : 1;
-                    } catch (RepositoryException e) {
-                        return 0;
-                    }
-                }
-            });
 
             initializationProcessor.processInitializeItems(session, contentItems);
         } finally {
