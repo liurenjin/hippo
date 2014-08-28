@@ -60,10 +60,12 @@ public class RepositorySchedulerImpl implements RepositoryScheduler {
 
     @Override
     public void scheduleJob(final RepositoryJobInfo jobInfo, final RepositoryJobTrigger trigger) throws RepositoryException {
-        try {
-            scheduler.scheduleJob(createQuartzJobDetail(jobInfo), createQuartzTrigger(trigger));
-        } catch (SchedulerException e) {
-            throw new RepositoryException(e);
+        synchronized (session) {
+            try {
+                scheduler.scheduleJob(createQuartzJobDetail(jobInfo), createQuartzTrigger(trigger));
+            } catch (SchedulerException e) {
+                throw new RepositoryException(e);
+            }
         }
     }
 
@@ -112,7 +114,6 @@ public class RepositorySchedulerImpl implements RepositoryScheduler {
         } catch (SchedulerException | InstantiationException | IllegalAccessException e) {
             throw new RepositoryException(e);
         }
-
     }
 
     private Trigger createQuartzTrigger(final RepositoryJobTrigger trigger) throws RepositoryException {
@@ -166,10 +167,12 @@ public class RepositorySchedulerImpl implements RepositoryScheduler {
     }
 
     private Node getJobNode(final String jobName, final String groupName) throws RepositoryException {
-        final Node moduleConfig = session.getNode(SchedulerModule.getModuleConfigPath());
-        final Node groupNode = JcrUtils.getNodeIfExists(moduleConfig, getGroupName(groupName));
-        if (groupNode != null) {
-            return JcrUtils.getNodeIfExists(groupNode, jobName);
+        synchronized (session) {
+            final Node moduleConfig = session.getNode(SchedulerModule.getModuleConfigPath());
+            final Node groupNode = JcrUtils.getNodeIfExists(moduleConfig, getGroupName(groupName));
+            if (groupNode != null) {
+                return JcrUtils.getNodeIfExists(groupNode, jobName);
+            }
         }
         return null;
     }
