@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2008-2014 Hippo B.V. (http://www.onehippo.com)
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,11 +35,18 @@ import org.hippoecm.repository.api.NodeNameCodec;
 import org.hippoecm.repository.ext.InternalWorkflow;
 import org.hippoecm.repository.gallery.GalleryWorkflow;
 
-// FIXME: this implementation should be totally rewritten as it should not
-// implement InternalWorkflow, but could and should be a plain POJO workflow.
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_AVAILABILITY;
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_DISCRIMINATOR;
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_PATHS;
+import static org.hippoecm.repository.api.HippoNodeType.NT_HANDLE;
+import static org.onehippo.repository.util.JcrConstants.JCR_DATA;
+import static org.onehippo.repository.util.JcrConstants.JCR_LAST_MODIFIED;
+import static org.onehippo.repository.util.JcrConstants.JCR_MIME_TYPE;
+import static org.onehippo.repository.util.JcrConstants.MIX_REFERENCEABLE;
+import static org.onehippo.repository.util.JcrConstants.MIX_VERSIONABLE;
+import static org.onehippo.repository.util.JcrConstants.NT_BASE;
 
-public class GalleryWorkflowImpl implements InternalWorkflow, GalleryWorkflow
-{
+public class GalleryWorkflowImpl implements InternalWorkflow, GalleryWorkflow {
 
     private Session rootSession;
     private Node subject;
@@ -63,30 +70,27 @@ public class GalleryWorkflowImpl implements InternalWorkflow, GalleryWorkflow
     }
 
     public Document createGalleryItem(String name, String type) throws RemoteException, RepositoryException {
-        // FIXME: this implementation is totally hardcoded and unlike the workflow in the FolderWorkflowImpl cannot be
-        // customized with auto created properties, like user, current time, and -most importantly- also not the
-        // hippo:availability property.  This implementation should be revoked entirely.
-        Node document, node, folder = rootSession.getNodeByUUID(subject.getUUID());
+        Node document, node, folder = rootSession.getNodeByIdentifier(subject.getIdentifier());
         Calendar timestamp = Calendar.getInstance();
         timestamp.setTime(new Date());
         name = NodeNameCodec.encode(name);
-        node = folder.addNode(name, "hippo:handle");
-        node.addMixin("mix:referenceable");
-        node.setProperty("hippo:discriminator", new Value[0]);
+        node = folder.addNode(name, NT_HANDLE);
+        node.addMixin(MIX_REFERENCEABLE);
+        node.setProperty(HIPPO_DISCRIMINATOR, new Value[0]);
         node = document = node.addNode(name, type);
-        node.addMixin("mix:versionable");
-        node.setProperty("hippo:availability", new String[] { "live", "preview" });
-        node.setProperty("hippo:paths", new String[0]);
+        node.addMixin(MIX_VERSIONABLE);
+        node.setProperty(HIPPO_AVAILABILITY, new String[] { "live", "preview" });
+        node.setProperty(HIPPO_PATHS, new String[0]);
 
         NodeType primaryType = node.getPrimaryNodeType();
         String primaryItemName = primaryType.getPrimaryItemName();
-        while (primaryItemName == null && !"nt:base".equals(primaryType.getName())) {
+        while (primaryItemName == null && !NT_BASE.equals(primaryType.getName())) {
             for (NodeType nt : primaryType.getSupertypes()) {
                 if (nt.getPrimaryItemName() != null) {
                     primaryItemName = nt.getPrimaryItemName();
                     break;
                 }
-                if (nt.isNodeType("nt:base")) {
+                if (nt.isNodeType(NT_BASE)) {
                     primaryType = nt;
                 }
             }
@@ -97,9 +101,9 @@ public class GalleryWorkflowImpl implements InternalWorkflow, GalleryWorkflow
             } else {
                 node = node.getNode(primaryItemName);
             }
-            node.setProperty("jcr:data", "");
-            node.setProperty("jcr:mimeType", "application/octet-stream");
-            node.setProperty("jcr:lastModified", timestamp);
+            node.setProperty(JCR_DATA, "");
+            node.setProperty(JCR_MIME_TYPE, "application/octet-stream");
+            node.setProperty(JCR_LAST_MODIFIED, timestamp);
         } else {
             throw new ItemNotFoundException("No primary item definition found");
         }
