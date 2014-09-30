@@ -291,7 +291,7 @@ public class PropInfo extends org.apache.jackrabbit.core.xml.PropInfo {
             }
 
             // single value mandatory property, temporary set ref to rootNode
-            Value rootRef = node.getSession().getValueFactory().createValue(node.getSession().getRootNode().getUUID(), PropertyType.REFERENCE);
+            Value rootRef = node.getSession().getValueFactory().createValue(node.getSession().getRootNode().getIdentifier(), PropertyType.REFERENCE);
             node.setProperty(name, rootRef);
 
             return;

@@ -43,6 +43,7 @@ import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
 import org.apache.jackrabbit.spi.commons.name.NameConstants;
 import org.hippoecm.repository.api.ImportMergeBehavior;
 import org.hippoecm.repository.api.ImportReferenceBehavior;
+import org.hippoecm.repository.impl.InitializationProcessorImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,8 +253,13 @@ public class DereferencedSessionImporter implements Importer {
             if (def.allowsSameNameSiblings()) {
                 return nodeInfo;
             } else {
-                String msg = "Import merge add or skip, skipped node " + conflicting.safeGetJCRPath() + " a node alread !";
-                log.debug(msg);
+                log.debug("Import merge add or skip, skipped node " + conflicting.safeGetJCRPath() + " a node already exists!");
+                if (InitializationProcessorImpl.currentInitializeItemName != null) {
+                    log.warn("Implicit skip detected on node {} while bootstrapping initialize item {}. " +
+                            "Please use either explicit skip (esv:merge=\"skip\") or remove this node from your content file. " +
+                            "Implicit skip is removed in 7.10.",
+                            conflicting.safeGetJCRPath(), InitializationProcessorImpl.currentInitializeItemName);
+                }
                 return null;
             }
         }
@@ -311,7 +317,7 @@ public class DereferencedSessionImporter implements Importer {
             if (isRootReferenceable) {
                 buf.append("trying to set reference to root node.");
                 log.warn(buf.toString());
-                return session.getRootNode().getUUID();
+                return session.getRootNode().getIdentifier();
             } else {
                 buf.append("root not referenceable.");
                 log.warn(buf.toString());
@@ -358,6 +364,7 @@ public class DereferencedSessionImporter implements Importer {
             return;
         }
         if (parent.hasNode(nodeName, index)) {
+            final NodeImpl existing = parent.getNode(nodeName);
             if (importPath.equals(parent.safeGetJCRPath())) {
                 // this is the root target node, decided by the user self
                 // only throw an error on the most strict import
@@ -366,12 +373,17 @@ public class DereferencedSessionImporter implements Importer {
                         || nodeInfo.mergeCombine()
                         || nodeInfo.mergeSkip()
                         || nodeInfo.mergeInsertBefore() != null) {
-                    String msg = "The node already exists add " + parent.safeGetJCRPath() + ", creating new one.";
+                    String msg = "The node already exists add " + existing.safeGetJCRPath() + ", creating new one.";
                     log.info(msg);
                 } else {
-                    String msg = "The base node already exists add " + parent.safeGetJCRPath() + ", merging.";
-                    log.info(msg);
-                    parents.push(parent.getNode(nodeName)); // push null onto stack for skipped node
+                    log.info("The base node already exists at " + parent.safeGetJCRPath() + ": merging.");
+                    if (InitializationProcessorImpl.currentInitializeItemName != null) {
+                        log.warn("Implicit merge on base node {} detected while bootstrapping initialize item {}. " +
+                                "Please use either explicit merge (esv:merge=\"combine\") or rewrite your content file. " +
+                                "Implicit merge on base node is removed in 7.10.",
+                                existing.safeGetJCRPath(), InitializationProcessorImpl.currentInitializeItemName);
+                    }
+                    parents.push(existing);
                     return;
                 }
             }

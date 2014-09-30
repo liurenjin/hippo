@@ -130,7 +130,7 @@ public class Reference {
                 if (!p.isAbsolute()) {
                     throw new RepositoryException("not an absolute path: " + path);
                 } else {
-                    uuids[i] = sessionImpl.getItemManager().getNode(p).getUUID();
+                    uuids[i] = sessionImpl.getItemManager().getNode(p).getIdentifier();
                 }
             } catch (RepositoryException e) {
                 uuids[i] = null;
@@ -165,7 +165,7 @@ public class Reference {
         }
         String path;
         for (int i = 0; i < uuids.length; i++) {
-            path = session.getNodeByUUID(uuids[i]).getPath();
+            path = session.getNodeByIdentifier(uuids[i]).getPath();
             if (path.startsWith(getBasePath())) {
                 paths[i] = path.substring(len);
             } else {

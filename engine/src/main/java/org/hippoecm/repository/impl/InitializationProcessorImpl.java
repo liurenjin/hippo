@@ -146,6 +146,8 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
     };
 
+    public static String currentInitializeItemName;
+
     private Logger logger;
 
     public InitializationProcessorImpl() {}
@@ -263,6 +265,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
 
             for (Node initializeItem : initializeItems) {
                 getLogger().info("Initializing configuration from " + initializeItem.getName());
+                currentInitializeItemName = initializeItem.getName();
                 try {
 
                     if (initializeItem.hasProperty(HippoNodeType.HIPPO_NAMESPACE)) {
@@ -318,6 +321,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                     getLogger().error("configuration as specified by " + initializeItem.getPath() + " failed", ex);
                 } finally {
                     session.refresh(false);
+                    currentInitializeItemName = null;
                 }
             }
         } catch (RepositoryException ex) {
