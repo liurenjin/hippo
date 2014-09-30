@@ -49,6 +49,8 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.Value;
 import javax.jcr.Workspace;
+import javax.jcr.lock.LockException;
+import javax.jcr.lock.LockManager;
 import javax.jcr.nodetype.NodeType;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.jcr.query.Query;
@@ -85,6 +87,8 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import static org.hippoecm.repository.api.HippoNodeType.HIPPO_SEQUENCE;
+import static org.hippoecm.repository.util.RepoUtils.getClusterNodeId;
+import static org.onehippo.repository.util.JcrConstants.MIX_LOCKABLE;
 
 public class InitializationProcessorImpl implements InitializationProcessor {
 
@@ -92,6 +96,8 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     private static final Logger log = LoggerFactory.getLogger(InitializationProcessorImpl.class);
 
     private static final String INIT_PATH = "/" + HippoNodeType.CONFIGURATION_PATH + "/" + HippoNodeType.INITIALIZE_PATH;
+    private static final long LOCK_TIMEOUT = Long.getLong("repo.bootstrap.lock.timeout", 60 * 5);
+    private static final long LOCK_ATTEMPT_INTERVAL = 1000 * 2;
 
     private static final String[] INIT_ITEM_PROPERTIES = {
             HippoNodeType.HIPPO_SEQUENCE,
@@ -206,6 +212,43 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     @Override
     public void setLogger(final Logger logger) {
         this.logger = logger;
+    }
+
+    @Override
+    public boolean lock(final Session session) throws RepositoryException {
+        ensureIsLockable(session, INIT_PATH);
+        final LockManager lockManager = session.getWorkspace().getLockManager();
+        final long t1 = System.currentTimeMillis();
+        while (true) {
+            log.debug("Attempting to obtain lock");
+            try {
+                lockManager.lock(INIT_PATH, false, false, LOCK_TIMEOUT, getClusterNodeId(session));
+                log.debug("Lock successfully obtained");
+                return true;
+            } catch (LockException e) {
+                if (System.currentTimeMillis() - t1 < LOCK_TIMEOUT * 1000) {
+                    log.debug("Obtaining lock failed, reattempting in {} ms", LOCK_ATTEMPT_INTERVAL);
+                    try {
+                        Thread.sleep(LOCK_ATTEMPT_INTERVAL);
+                    } catch (InterruptedException ignore) {
+                    }
+                } else {
+                    return false;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void unlock(final Session session) throws RepositoryException {
+        final LockManager lockManager = session.getWorkspace().getLockManager();
+        try {
+            log.debug("Attempting to release lock");
+            lockManager.unlock(INIT_PATH);
+            log.debug("Lock successfully released");
+        } catch (LockException e) {
+            log.warn("Current session no longer holds a lock, please set a longer repo.bootstrap.lock.timeout");
+        }
     }
 
     private void processInitializeItems(Session session, List<Node> initializeItems, boolean dryRun) {
@@ -578,7 +621,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
     }
 
-    public List<Node> loadExtension(final URL configurationURL, final Session session, final Node initializationFolder, final Set<String> reloadItems) throws RepositoryException, IOException {
+    private List<Node> loadExtension(final URL configurationURL, final Session session, final Node initializationFolder, final Set<String> reloadItems) throws RepositoryException, IOException {
         List<Node> initializeItems = new ArrayList<Node>();
         getLogger().info("Initializing extension "+configurationURL);
         try {
@@ -1073,6 +1116,14 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             return logger;
         }
         return log;
+    }
+
+    private void ensureIsLockable(final Session session, final String absPath) throws RepositoryException {
+        final Node node = session.getNode(absPath);
+        if (!node.isNodeType(MIX_LOCKABLE)) {
+            node.addMixin(MIX_LOCKABLE);
+            session.save();
+        }
     }
 
     private static class ContentFileInfo {
