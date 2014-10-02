@@ -256,7 +256,7 @@ public class DereferencedSessionImporter implements Importer {
                 log.debug("Import merge add or skip, skipped node " + conflicting.safeGetJCRPath() + " a node already exists!");
                 if (InitializationProcessorImpl.currentInitializeItemName != null) {
                     log.warn("Implicit skip detected on node {} while bootstrapping initialize item {}. " +
-                            "Please use either explicit skip (esv:merge=\"skip\") or remove this node from your content file. " +
+                            "Please use either explicit skip (h:merge=\"skip\") or remove this node from your content file. " +
                             "Implicit skip is removed in 7.10.",
                             conflicting.safeGetJCRPath(), InitializationProcessorImpl.currentInitializeItemName);
                 }
@@ -379,7 +379,7 @@ public class DereferencedSessionImporter implements Importer {
                     log.info("The base node already exists at " + parent.safeGetJCRPath() + ": merging.");
                     if (InitializationProcessorImpl.currentInitializeItemName != null) {
                         log.warn("Implicit merge on base node {} detected while bootstrapping initialize item {}. " +
-                                "Please use either explicit merge (esv:merge=\"combine\") or rewrite your content file. " +
+                                "Please use either explicit merge (h:merge=\"combine\") or rewrite your content file. " +
                                 "Implicit merge on base node is removed in 7.10.",
                                 existing.safeGetJCRPath(), InitializationProcessorImpl.currentInitializeItemName);
                     }
