@@ -78,6 +78,12 @@ public class TranslationWorkflowImpl implements TranslationWorkflow, InternalWor
 
         HippoTranslatedNode translatedFolder = new HippoTranslatedNode(lclContainingFolder);
         Node folderTranslation = translatedFolder.getTranslation(language);
+
+        //Prevent sns creation
+        if (folderTranslation.hasNode(name)) {
+            throw new WorkflowException("Error: target folder " + folderTranslation.getPath() + " already contains a child folder or document with name:" + name);
+        }
+
         Document targetFolder = new Document(folderTranslation.getIdentifier());
         Node copiedDoc = null;
         if (userSubject.getParent().isNodeType(HippoNodeType.NT_HANDLE)) {
