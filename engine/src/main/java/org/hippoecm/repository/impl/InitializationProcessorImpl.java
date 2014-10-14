@@ -577,7 +577,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
     }
 
-    public List<Node> loadExtensions(Session session, Node initializationFolder, boolean cleanup) throws IOException, RepositoryException {
+    public List<Node> loadExtensions(Session session, Node initializationFolder, boolean markMissingItems) throws IOException, RepositoryException {
         final Set<String> reloadItems = new HashSet<String>();
         final long now = System.currentTimeMillis();
         final List<URL> extensions = scanForExtensions();
@@ -585,8 +585,8 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         for(final URL configurationURL : extensions) {
             initializeItems.addAll(loadExtension(configurationURL, session, initializationFolder, reloadItems));
         }
-        if (cleanup) {
-            cleanupInitializeItems(session, now);
+        if (markMissingItems) {
+            markMissingInitializeItems(session, now);
         }
         initializeItems.addAll(markReloadDownstreamItems(session, reloadItems));
         return initializeItems;
@@ -608,14 +608,14 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         return initializeItems;
     }
 
-    private void cleanupInitializeItems(final Session session, final long cleanBefore) throws RepositoryException {
+    private void markMissingInitializeItems(final Session session, final long cleanBefore) throws RepositoryException {
         try {
             final String statement = GET_OLD_INITIALIZE_ITEMS.replace("{}", String.valueOf(cleanBefore));
             final Query query = session.getWorkspace().getQueryManager().createQuery(statement, Query.SQL);
             for (Node node : new NodeIterable(query.execute().getNodes())) {
                 if (node != null) {
-                    log.info("Removing old initialize item {}", node.getName());
-                    node.remove();
+                    log.info("Marking missing initialize item {}", node.getName());
+                    node.setProperty(HippoNodeType.HIPPO_STATUS, "missing");
                 }
             }
             session.save();
@@ -709,6 +709,11 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
 
         initItemNode.setProperty(HippoNodeType.HIPPO_TIMESTAMP, System.currentTimeMillis());
+        final String status = JcrUtils.getStringProperty(initItemNode, HippoNodeType.HIPPO_STATUS, null);
+        if ("missing".equals(status)) {
+            initItemNode.getProperty(HippoNodeType.HIPPO_STATUS).remove();
+        }
+
 
         return initializeItems;
     }
@@ -789,8 +794,10 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     public Iterable<Node> getDownstreamItems(final Session session, final String contentRoot, final String contextNodeName) throws RepositoryException {
         final QueryResult result = session.getWorkspace().getQueryManager().createQuery(
                 "SELECT * FROM hipposys:initializeitem WHERE " +
-                        "jcr:path = '/hippo:configuration/hippo:initialize/%' AND " +
-                        HippoNodeType.HIPPO_CONTENTROOT + " LIKE '" + contentRoot + "%'", Query.SQL
+                        "jcr:path = '/hippo:configuration/hippo:initialize/%' AND (" +
+                        HippoNodeType.HIPPO_CONTENTROOT + " LIKE '" + contentRoot + "/%' OR " +
+                        HippoNodeType.HIPPO_CONTENTROOT + " = '" + contentRoot + "') AND " +
+                        HippoNodeType.HIPPO_STATUS + " <> 'missing'", Query.SQL
         ).execute();
         final List<Node> downStreamItems = new ArrayList<>();
         final String contextNodePath = contentRoot.equals("/") ? contentRoot + contextNodeName : contentRoot + "/" + contextNodeName;
