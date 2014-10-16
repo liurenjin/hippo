@@ -58,6 +58,7 @@ import javax.jcr.query.QueryResult;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.cnd.CompactNodeTypeDefReader;
 import org.apache.jackrabbit.commons.cnd.ParseException;
@@ -86,7 +87,9 @@ import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_ERRORMESSAGE;
 import static org.hippoecm.repository.api.HippoNodeType.HIPPO_SEQUENCE;
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_STATUS;
 import static org.hippoecm.repository.util.RepoUtils.getClusterNodeId;
 import static org.onehippo.repository.util.JcrConstants.MIX_LOCKABLE;
 
@@ -98,6 +101,9 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     private static final String INIT_PATH = "/" + HippoNodeType.CONFIGURATION_PATH + "/" + HippoNodeType.INITIALIZE_PATH;
     private static final long LOCK_TIMEOUT = Long.getLong("repo.bootstrap.lock.timeout", 60 * 5);
     private static final long LOCK_ATTEMPT_INTERVAL = 1000 * 2;
+
+    private static final String SYSTEM_RELOAD_PROPERTY = "repo.bootstrap.reload-on-startup";
+    private static final String ERROR_MESSAGE_RELOAD_DISABLED = "Reload requested but not enabled";
 
     private static final String[] INIT_ITEM_PROPERTIES = {
             HippoNodeType.HIPPO_SEQUENCE,
@@ -674,12 +680,19 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         final String existingItemVersion = initItemNode != null ? JcrUtils.getStringProperty(initItemNode, HippoNodeType.HIPPO_VERSION, null) : null;
         final String itemVersion = JcrUtils.getStringProperty(tempInitItemNode, HippoNodeType.HIPPO_VERSION, null);
 
-        final boolean isReload = initItemNode != null && shouldReload(tempInitItemNode, initItemNode, moduleVersion, existingModuleVersion, itemVersion, existingItemVersion);
+        boolean isReload = false;
 
-        if (isReload) {
-            getLogger().info("Item " + tempInitItemNode.getName() + " needs to be reloaded");
-            initItemNode.remove();
-            initItemNode = null;
+        if (initItemNode != null && shouldReload(tempInitItemNode, initItemNode, moduleVersion, existingModuleVersion, itemVersion, existingItemVersion)) {
+            if (isReloadEnabled()) {
+                isReload = true;
+                getLogger().info("Item " + tempInitItemNode.getName() + " needs to be reloaded");
+                initItemNode.remove();
+                initItemNode = null;
+            } else {
+                log.warn(ERROR_MESSAGE_RELOAD_DISABLED);
+                initItemNode.setProperty(HIPPO_STATUS, "failed");
+                initItemNode.setProperty(HIPPO_ERRORMESSAGE, ERROR_MESSAGE_RELOAD_DISABLED);
+            }
         }
 
         if (initItemNode == null) {
@@ -1135,6 +1148,11 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             node.addMixin(MIX_LOCKABLE);
             session.save();
         }
+    }
+
+    private boolean isReloadEnabled() {
+        final String reloadProperty = System.getProperty(SYSTEM_RELOAD_PROPERTY, Boolean.TRUE.toString());
+        return BooleanUtils.toBoolean(reloadProperty);
     }
 
     private static class ContentFileInfo {
