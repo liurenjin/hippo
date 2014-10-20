@@ -389,6 +389,7 @@ public class RepositoryServlet extends HttpServlet {
             String param;
 
             if ((param = req.getParameter("xpath")) != null || (param = req.getParameter("sql")) != null) {
+                param = param.trim();
                 QueryManager qmgr = jcrSession.getWorkspace().getQueryManager();
 
                 String language = req.getParameter("xpath") != null ? Query.XPATH: Query.SQL;
