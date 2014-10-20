@@ -97,7 +97,7 @@ public class ConfigurationTest extends RepositoryTestCase {
         // expecting error output: set noplogger
         InitializationProcessor processor = new InitializationProcessorImpl(new NOPLogger() {});
         processor.processInitializeItems(session);
-        assertEquals("pending", node.getProperty("hippo:status").getString());
+        assertEquals("failed", node.getProperty("hippo:status").getString());
     }
 
     @Test
@@ -124,7 +124,7 @@ public class ConfigurationTest extends RepositoryTestCase {
         // expecting error output: set noplogger
         InitializationProcessor processor = new InitializationProcessorImpl(new NOPLogger() {});
         processor.processInitializeItems(session);
-        assertEquals("pending", node.getProperty("hippo:status").getString());
+        assertEquals("failed", node.getProperty("hippo:status").getString());
     }
 
     @Test
@@ -151,7 +151,7 @@ public class ConfigurationTest extends RepositoryTestCase {
         // expecting error output: set noplogger
         InitializationProcessor processor = new InitializationProcessorImpl(new NOPLogger() {});
         processor.processInitializeItems(session);
-        assertEquals("pending", node.getProperty("hippo:status").getString());
+        assertEquals("failed", node.getProperty("hippo:status").getString());
     }
 
     @Test
@@ -165,7 +165,7 @@ public class ConfigurationTest extends RepositoryTestCase {
         // expecting error output: set noplogger
         InitializationProcessor processor = new InitializationProcessorImpl(new NOPLogger() {});
         processor.processInitializeItems(session);
-        assertEquals("pending", node.getProperty("hippo:status").getString());
+        assertEquals("failed", node.getProperty("hippo:status").getString());
     }
 
     @Test
@@ -180,7 +180,7 @@ public class ConfigurationTest extends RepositoryTestCase {
         // expecting error output: set noplogger
         InitializationProcessor processor = new InitializationProcessorImpl(new NOPLogger() {});
         processor.processInitializeItems(session);
-        assertEquals("pending", node.getProperty("hippo:status").getString());
+        assertEquals("failed", node.getProperty("hippo:status").getString());
     }
 
     @Test
