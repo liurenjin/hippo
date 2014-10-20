@@ -323,10 +323,15 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                         session.save();
                     }
 
-                } catch (IOException | ParseException | RepositoryException ex) {
-                    getLogger().error("configuration as specified by " + initializeItem.getPath() + " failed", ex);
+                } catch (IOException | ParseException | RepositoryException e) {
+                    getLogger().error("configuration as specified by " + initializeItem.getPath() + " failed", e);
+                    if (!dryRun) {
+                        session.refresh(false);
+                        initializeItem.setProperty(HIPPO_STATUS, "failed");
+                        initializeItem.setProperty(HIPPO_ERRORMESSAGE, e.getClass().toString() + ":" + e.getMessage());
+                        session.save();
+                    }
                 } finally {
-                    session.refresh(false);
                     currentInitializeItemName = null;
                 }
             }
