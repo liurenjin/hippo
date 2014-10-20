@@ -749,9 +749,16 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     }
 
     private boolean shouldReload(final Node temp, final Node existing, final String moduleVersion, final String existingModuleVersion, final String itemVersion, final String existingItemVersion) throws RepositoryException {
-        if (!isReloadable(temp)) {
+        if (!isReloadOnStartup(temp)) {
             getLogger().debug("Item {} is not reloadable", temp.getName());
             return false;
+        } else if (existing == null) {
+            log.debug("Reload is requested on item {} but item is new: proceeding with regular bootstrap", temp.getName());
+            return false;
+        } else if (isDeltaMerge(existing)) {
+            getLogger().error("Cannot reload initialize item {} because it is a combine or overlay delta", temp.getName());
+            return false;
+
         }
         if (itemVersion != null) {
             final boolean isNewer = isNewerVersion(itemVersion, existingItemVersion);
@@ -1113,15 +1120,16 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     }
 
     private boolean isReloadable(Node node) throws RepositoryException {
-        if (JcrUtils.getBooleanProperty(node, HippoNodeType.HIPPO_RELOADONSTARTUP, false)) {
-            final String deltaDirective = StringUtils.trim(JcrUtils.getStringProperty(node, HippoNodeType.HIPPOSYS_DELTADIRECTIVE, null));
-            if (deltaDirective != null && (deltaDirective.equals("combine") || deltaDirective.equals("overlay"))) {
-                getLogger().error("Cannot reload initialize item {} because it is a combine or overlay delta", node.getName());
-                return false;
-            }
-            return true;
-        }
-        return false;
+        return isReloadOnStartup(node) && !isDeltaMerge(node);
+    }
+
+    private boolean isReloadOnStartup(Node node) throws RepositoryException {
+        return JcrUtils.getBooleanProperty(node, HippoNodeType.HIPPO_RELOADONSTARTUP, false);
+    }
+
+    private boolean isDeltaMerge(Node node) throws RepositoryException {
+        final String deltaDirective = StringUtils.trim(JcrUtils.getStringProperty(node, HippoNodeType.HIPPOSYS_DELTADIRECTIVE, null));
+        return deltaDirective != null && (deltaDirective.equals("combine") || deltaDirective.equals("overlay"));
     }
 
     private void copyProperty(Node source, Node target, String propertyName) throws RepositoryException {
