@@ -757,9 +757,6 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         if (!isReloadOnStartup(temp)) {
             getLogger().debug("Item {} is not reloadable", temp.getName());
             return false;
-        } else if (existing == null) {
-            log.debug("Reload is requested on item {} but item is new: proceeding with regular bootstrap", temp.getName());
-            return false;
         } else if (isDeltaMerge(existing)) {
             getLogger().error("Cannot reload initialize item {} because it is a combine or overlay delta", temp.getName());
             return false;
