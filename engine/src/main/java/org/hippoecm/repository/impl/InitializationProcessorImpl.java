@@ -639,7 +639,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
     }
 
-    private List<Node> loadExtension(final URL configurationURL, final Session session, final Node initializationFolder, final Set<String> reloadItems, final Map<String, String> itemNames) throws RepositoryException, IOException {
+    public List<Node> loadExtension(final URL configurationURL, final Session session, final Node initializationFolder, final Set<String> reloadItems, final Map<String, String> itemNames) throws RepositoryException, IOException {
         List<Node> initializeItems = new ArrayList<Node>();
         getLogger().info("Initializing extension "+configurationURL);
         try {

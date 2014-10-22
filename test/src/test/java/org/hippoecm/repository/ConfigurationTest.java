@@ -16,6 +16,10 @@
 package org.hippoecm.repository;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -389,6 +393,13 @@ public class ConfigurationTest extends RepositoryTestCase {
         check(new String[]{"R", "S", "T", "U"});
     }
 
-    private class IgnoreErrorLogger extends NOPLogger {
+    @Test
+    public void testDetectDuplicateItems() throws Exception {
+        final Map<String, String> itemNames = new HashMap<String, String>() {{ put("duplicate", "<extension>"); }};
+        final InitializationProcessorImpl processor = new InitializationProcessorImpl();
+        final List<Node> items = processor.loadExtension(getClass().getResource("/bootstrap/hippoecm-extension.xml"), session,
+                session.getNode("/hippo:configuration/hippo:initialize"), new HashSet<String>(), itemNames);
+        assertEquals(0, items.size());
     }
+
 }
