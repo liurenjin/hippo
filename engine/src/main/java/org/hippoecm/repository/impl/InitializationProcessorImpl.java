@@ -29,9 +29,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.jar.Attributes;
@@ -194,7 +196,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
 
     @Override
     public List<Node> loadExtension(final Session session, final URL extension) throws RepositoryException, IOException {
-        return loadExtension(extension, session, session.getNode(INITIALIZATION_FOLDER), new HashSet<String>());
+        return loadExtension(extension, session, session.getNode(INITIALIZATION_FOLDER), new HashSet<String>(), new HashMap<String, String>());
     }
 
     @Override
@@ -593,8 +595,9 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         final long now = System.currentTimeMillis();
         final List<URL> extensions = scanForExtensions();
         final List<Node> initializeItems = new ArrayList<Node>();
+        final Map<String, String> itemNames = new HashMap<>();
         for(final URL configurationURL : extensions) {
-            initializeItems.addAll(loadExtension(configurationURL, session, initializationFolder, reloadItems));
+            initializeItems.addAll(loadExtension(configurationURL, session, initializationFolder, reloadItems, itemNames));
         }
         if (markMissingItems) {
             markMissingInitializeItems(session, now);
@@ -636,7 +639,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
     }
 
-    private List<Node> loadExtension(final URL configurationURL, final Session session, final Node initializationFolder, final Set<String> reloadItems) throws RepositoryException, IOException {
+    private List<Node> loadExtension(final URL configurationURL, final Session session, final Node initializationFolder, final Set<String> reloadItems, final Map<String, String> itemNames) throws RepositoryException, IOException {
         List<Node> initializeItems = new ArrayList<Node>();
         getLogger().info("Initializing extension "+configurationURL);
         try {
@@ -644,8 +647,14 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             final Node tempInitFolderNode = session.getNode("/hippo:configuration/hippo:temporary/hippo:initialize");
             final String moduleVersion = getModuleVersion(configurationURL);
             for (final Node tempInitItemNode : new NodeIterable(tempInitFolderNode.getNodes())) {
-                initializeItems.addAll(initializeInitializeItem(tempInitItemNode, initializationFolder, moduleVersion, configurationURL, reloadItems));
-
+                final String itemName = tempInitItemNode.getName();
+                if (itemNames.containsKey(itemName)) {
+                    log.error("Error during loading of extension {}: initialize item {} already defined in {}",
+                            this, itemName, itemNames.get(itemName));
+                } else {
+                    initializeItems.addAll(initializeInitializeItem(tempInitItemNode, initializationFolder, moduleVersion, configurationURL, reloadItems));
+                    itemNames.put(itemName, configurationURL.toString());
+                }
             }
             if(tempInitFolderNode.hasProperty(HippoNodeType.HIPPO_VERSION)) {
                 Set<String> tags = new TreeSet<String>();
