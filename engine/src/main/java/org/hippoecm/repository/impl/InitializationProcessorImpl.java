@@ -825,9 +825,8 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     public Iterable<Node> getDownstreamItems(final Session session, final String contentRoot, final String contextNodeName) throws RepositoryException {
         final QueryResult result = session.getWorkspace().getQueryManager().createQuery(
                 "SELECT * FROM hipposys:initializeitem WHERE " +
-                        "jcr:path = '/hippo:configuration/hippo:initialize/%' AND (" +
-                        HippoNodeType.HIPPO_CONTENTROOT + " LIKE '" + contentRoot + "/%' OR " +
-                        HippoNodeType.HIPPO_CONTENTROOT + " = '" + contentRoot + "') AND " +
+                        "jcr:path = '/hippo:configuration/hippo:initialize/%' AND " +
+                        HippoNodeType.HIPPO_CONTENTROOT + " LIKE '" + contentRoot + "%' AND " +
                         HippoNodeType.HIPPO_STATUS + " <> 'missing'", Query.SQL
         ).execute();
         final List<Node> downStreamItems = new ArrayList<>();
