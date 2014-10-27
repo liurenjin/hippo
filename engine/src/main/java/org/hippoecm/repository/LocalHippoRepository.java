@@ -495,7 +495,7 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                     log.info("No need to reload " + cndName + ": no changes");
                 }
             } catch (ConstraintViolationException|InvalidItemStateException|ItemExistsException|LockException|
-                    NoSuchNodeTypeException|ParseException|VersionException|AccessDeniedException|
+                    NoSuchNodeTypeException|VersionException|AccessDeniedException|
                     NoSuchAlgorithmException|IOException ex) {
                 throw new RepositoryException("Could not initialize repository with hippo node types", ex);
             } finally {

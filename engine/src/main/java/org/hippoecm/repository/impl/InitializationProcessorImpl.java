@@ -325,7 +325,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                         session.save();
                     }
 
-                } catch (IOException | ParseException | RepositoryException e) {
+                } catch (IOException | RepositoryException e) {
                     getLogger().error("configuration as specified by " + initializeItem.getPath() + " failed", e);
                     if (!dryRun) {
                         session.refresh(false);
@@ -441,14 +441,12 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         boolean pckg = contentResource.endsWith(".zip") || contentResource.endsWith(".jar");
 
         if (contentURL == null) {
-            getLogger().error("Cannot locate content configuration '" + contentResource + "', initialization skipped");
-            return;
+            throw new RepositoryException("Cannot locate content configuration '" + contentResource + "', initialization skipped");
         }
 
         final String contentRoot = StringUtils.trim(JcrUtils.getStringProperty(node, HippoNodeType.HIPPO_CONTENTROOT, "/"));
         if (contentRoot.startsWith(INIT_PATH)) {
-            getLogger().error("Bootstrapping content to " + INIT_PATH + " is not supported");
-            return;
+            throw new RepositoryException("Bootstrapping content to " + INIT_PATH + " is not supported");
         }
 
         if (isReloadable(node)) {
@@ -471,10 +469,10 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                         reorderNode(session, contextNodePath, index);
                     }
                 } else {
-                    getLogger().error("Cannot reload item {}: removing node failed", node.getName());
+                    throw new RepositoryException("Cannot reload item " + node.getName() + ": removing node failed");
                 }
             } else {
-                getLogger().error("Cannot reload item {} because context node could not be determined", node.getName());
+                getLogger().error("Cannot reload item " + node.getName() + " because context node could not be determined");
             }
         } else {
             InputStream is = null;
@@ -526,7 +524,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         getLogger().info("Delete content in initialization: {} {}", node.getName(), path);
         final boolean success = removeNode(session, path, immediateSave && !dryRun);
         if (!success) {
-            getLogger().error("Content delete in item {} failed", node.getName());
+            throw new RepositoryException("Content delete in item " + node.getName() + " failed");
         }
     }
 
@@ -535,18 +533,18 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         getLogger().info("Delete content in initialization: {} {}", node.getName(), path);
         final boolean success = removeProperty(session, path, !dryRun);
         if (!success) {
-            getLogger().error("Property delete in item {} failed", node.getName());
+            throw new RepositoryException("Property delete in item " + node.getName() + " failed");
         }
     }
 
-    private void processNodeTypesFromNode(final Node node, final Session session, final boolean dryRun) throws RepositoryException, ParseException {
+    private void processNodeTypesFromNode(final Node node, final Session session, final boolean dryRun) throws RepositoryException {
         if (getLogger().isDebugEnabled()) {
             getLogger().debug("Found nodetypes configuration");
         }
         String cndName = "<<internal>>";
         InputStream cndStream = node.getProperty(HippoNodeType.HIPPO_NODETYPES).getStream();
         if (cndStream == null) {
-            getLogger().error("Cannot get stream for nodetypes definition property.");
+            throw new RepositoryException("Cannot get stream for nodetypes definition property.");
         } else {
             getLogger().info("Initializing node types from nodetypes property.");
             if (!dryRun) {
@@ -555,14 +553,14 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
     }
 
-    private void processNodeTypesFromFile(final Node node, final Session session, final boolean dryRun) throws RepositoryException, IOException, ParseException {
+    private void processNodeTypesFromFile(final Node node, final Session session, final boolean dryRun) throws RepositoryException, IOException {
         if (getLogger().isDebugEnabled()) {
             getLogger().debug("Found nodetypes resource configuration");
         }
         String cndResource = StringUtils.trim(node.getProperty(HippoNodeType.HIPPO_NODETYPESRESOURCE).getString());
         URL cndURL = getResource(node, cndResource);
         if (cndURL == null) {
-            getLogger().error("Cannot locate nodetype configuration '" + cndResource + "', initialization skipped");
+            throw new RepositoryException("Cannot locate nodetype configuration '" + cndResource + "', initialization skipped");
         } else {
             if (!dryRun) {
                 InputStream is = null;
@@ -771,7 +769,10 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             getLogger().debug("Item {} is not reloadable", temp.getName());
             return false;
         } else if (isDeltaMerge(existing)) {
-            getLogger().error("Cannot reload initialize item {} because it is a combine or overlay delta", temp.getName());
+            final String msg = "Cannot reload initialize item " + temp.getName() + " because it is a combine or overlay delta";
+            getLogger().error(msg);
+            existing.setProperty(HIPPO_STATUS, "failed");
+            existing.setProperty(HIPPO_ERRORMESSAGE, msg);
             return false;
 
         }
@@ -899,82 +900,47 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         }
     }
 
-    public void initializeNamespace(NamespaceRegistry nsreg, String prefix, String uri) throws RepositoryException {
+    public void initializeNamespace(NamespaceRegistry registry, String prefix, String uri) throws RepositoryException {
         try {
-
-            /* Try to remap namespace if a namespace already exists and the uri is similar.
-             * This assumes a convention to use in the namespace URI.  It should end with a version
-             * number of the nodetypes, such as in http://www.sample.org/nt/1.0.0
-             */
-            try {
-                String currentURI = nsreg.getURI(prefix);
-                if (currentURI.equals(uri)) {
-                    getLogger().debug("Namespace already exists: " + prefix + ":" + uri);
-                    return;
-                }
-                String uriPrefix = currentURI.substring(0, currentURI.lastIndexOf("/") + 1);
-                if(!uriPrefix.equals(uri.substring(0,uri.lastIndexOf("/")+1))) {
-                    getLogger().error("Prefix already used for different namespace: " + prefix + ":" + uri);
-                    return;
-                }
-                // do not remap namespace, the upgrading infrastructure must take care of this
-                return;
-            } catch (NamespaceException ex) {
-                if (!ex.getMessage().endsWith("is not a registered namespace prefix.")) {
-                    getLogger().error(ex.getMessage() +" For: " + prefix + ":" + uri);
-                }
-            }
-
-            nsreg.registerNamespace(prefix, uri);
-
-        } catch (NamespaceException ex) {
-            if (ex.getMessage().endsWith("mapping already exists")) {
-                getLogger().error("Namespace already exists: " + prefix + ":" + uri);
+            String currentURI = registry.getURI(prefix);
+            if (currentURI.equals(uri)) {
+                log.debug("Namespace already exists: {}:{}", prefix, uri);
             } else {
-                getLogger().error(ex.getMessage()+" For: " + prefix + ":" + uri);
+                throw new RepositoryException("Prefix already used for different namespace: " + prefix + ":" + uri);
             }
+        } catch (NamespaceException ex) {
+            // mapping does not exist
+            registry.registerNamespace(prefix, uri);
         }
     }
 
-    public void initializeNodetypes(Workspace workspace, InputStream cndStream, String cndName) throws ParseException, RepositoryException {
-        getLogger().info("Initializing nodetypes from: " + cndName);
-        CompactNodeTypeDefReader<QNodeTypeDefinition,NamespaceMapping> cndReader = new HippoCompactNodeTypeDefReader<QNodeTypeDefinition, NamespaceMapping>(new InputStreamReader(cndStream), cndName, workspace.getNamespaceRegistry(), new QDefinitionBuilderFactory());
-        List<QNodeTypeDefinition> ntdList = cndReader.getNodeTypeDefinitions();
-        NodeTypeManagerImpl ntmgr = (NodeTypeManagerImpl) workspace.getNodeTypeManager();
-        NodeTypeRegistry ntreg = ntmgr.getNodeTypeRegistry();
+    public void initializeNodetypes(Workspace workspace, InputStream cndStream, String cndName) throws RepositoryException {
+        try {
+            getLogger().info("Initializing nodetypes from: {}", cndName);
+            CompactNodeTypeDefReader<QNodeTypeDefinition,NamespaceMapping> cndReader =
+                    new HippoCompactNodeTypeDefReader(new InputStreamReader(cndStream), cndName, workspace.getNamespaceRegistry());
+            List<QNodeTypeDefinition> ntdList = cndReader.getNodeTypeDefinitions();
+            NodeTypeRegistry ntreg = ((NodeTypeManagerImpl) workspace.getNodeTypeManager()).getNodeTypeRegistry();
 
-        for (QNodeTypeDefinition ntd : ntdList) {
-            try {
-                ntreg.registerNodeType(ntd);
-                getLogger().info("Registered node type: " + ntd.getName().getLocalName());
-            } catch (NamespaceException ex) {
-                getLogger().error(ex.getMessage() + ". In " + cndName + " error for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), ex);
-            } catch (InvalidNodeTypeDefException ex) {
-                if (ex.getMessage().endsWith("already exists")) {
-                    try {
+            for (QNodeTypeDefinition ntd : ntdList) {
+                try {
+                    if (!ntreg.isRegistered(ntd.getName())) {
+                        getLogger().info("Registering node type: {}", ntd.getName());
+                        ntreg.registerNodeType(ntd);
+                    } else {
+                        getLogger().info("Replacing node type: {}", ntd.getName());
                         ntreg.reregisterNodeType(ntd);
-                        getLogger().info("Replaced node type: " + ntd.getName().getLocalName());
-                    } catch (NamespaceException e) {
-                        getLogger().error(e.getMessage() + ". In " + cndName + " error for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), e);
-                    } catch (InvalidNodeTypeDefException e) {
-                        getLogger().info(e.getMessage() + ". In " + cndName + " for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), e);
-                    } catch (RepositoryException e) {
-                        if (!e.getMessage().equals("not yet implemented")) {
-                            getLogger().warn(e.getMessage() + ". In " + cndName + " error for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), e);
-                        }
                     }
-                } else {
-                    getLogger().error(ex.getMessage() + ". In " + cndName + " error for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), ex);
-                }
-            } catch (RepositoryException ex) {
-                if (!ex.getMessage().equals("not yet implemented")) {
-                    getLogger().warn(ex.getMessage() + ". In " + cndName + " error for " + ntd.getName().getNamespaceURI() + ":" + ntd.getName().getLocalName(), ex);
+                } catch (InvalidNodeTypeDefException e) {
+                    throw new RepositoryException("Invalid node type definition for node type " + ntd.getName(), e);
                 }
             }
+        } catch (ParseException e) {
+            throw new RepositoryException("Failed to parse cnd " + cndName, e);
         }
     }
 
-    public boolean removeNode(Session session, String absPath, boolean save) {
+    public boolean removeNode(Session session, String absPath, boolean save) throws RepositoryException {
         if (!absPath.startsWith("/")) {
             getLogger().warn("Not an absolute path: {}", absPath);
             return false;
@@ -984,30 +950,21 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             return false;
         }
 
-        try {
-            if (session.nodeExists(absPath)) {
-                final int offset = absPath.lastIndexOf('/');
-                final String nodeName = absPath.substring(offset+1);
-                final String parentPath = offset == 0 ? "/" : absPath.substring(0, offset);
-                final Node parent = session.getNode(parentPath);
-                if (parent.getNodes(nodeName).getSize() > 1) {
-                    getLogger().warn("Removing same name sibling is not supported: not removing {}", absPath);
-                } else {
-                    session.getNode(absPath).remove();
-                }
-                if (save) {
-                    session.save();
-                }
-            }
-            return true;
-        } catch (RepositoryException ex) {
-            if (getLogger().isDebugEnabled()) {
-                getLogger().error("Error while removing node '" + absPath + "' : " + ex.getMessage(), ex);
+        if (session.nodeExists(absPath)) {
+            final int offset = absPath.lastIndexOf('/');
+            final String nodeName = absPath.substring(offset+1);
+            final String parentPath = offset == 0 ? "/" : absPath.substring(0, offset);
+            final Node parent = session.getNode(parentPath);
+            if (parent.getNodes(nodeName).getSize() > 1) {
+                getLogger().warn("Removing same name sibling is not supported: not removing {}", absPath);
             } else {
-                getLogger().error("Error while removing node '" + absPath + "' : " + ex.getMessage());
+                session.getNode(absPath).remove();
+            }
+            if (save) {
+                session.save();
             }
         }
-        return false;
+        return true;
     }
 
     private boolean removeProperty(final Session session, final String absPath, final boolean save) {
@@ -1033,11 +990,11 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         return false;
     }
 
-    public void initializeNodecontent(Session session, String parentAbsPath, InputStream istream, URL location) {
+    public void initializeNodecontent(Session session, String parentAbsPath, InputStream istream, URL location) throws RepositoryException {
         initializeNodecontent(session, parentAbsPath, istream, location, false);
     }
 
-    public void initializeNodecontent(Session session, String parentAbsPath, InputStream istream, URL location, boolean pckg) {
+    public void initializeNodecontent(Session session, String parentAbsPath, InputStream istream, URL location, boolean pckg) throws RepositoryException {
         if (location != null) {
             getLogger().info("Initializing content from: {} to {}", location, parentAbsPath);
         } else {
@@ -1083,12 +1040,8 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             } else {
                 session.importXML(parentAbsPath, istream, ImportUUIDBehavior.IMPORT_UUID_CREATE_NEW);
             }
-        } catch (IOException | RepositoryException | URISyntaxException e) {
-            if (getLogger().isDebugEnabled()) {
-                getLogger().error("Error initializing content for " + location + " in '" + parentAbsPath + "' : " + e.getClass().getName() + ": " + e.getMessage(), e);
-            } else {
-                getLogger().error("Error initializing content for " + location + " in '" + parentAbsPath + "' : " + e.getClass().getName() + ": " + e.getMessage());
-            }
+        } catch (IOException | URISyntaxException e) {
+            throw new RepositoryException("Error initializing content for " + location + " in '" + parentAbsPath + "': " + e, e);
         } finally {
             IOUtils.closeQuietly(out);
             IOUtils.closeQuietly(esvIn);
