@@ -697,7 +697,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         boolean isReload = false;
 
         if (initItemNode != null && shouldReload(tempInitItemNode, initItemNode, moduleVersion, existingModuleVersion, itemVersion, existingItemVersion)) {
-            if (isReloadEnabled()) {
+            if (isReloadEnabled() || isNodeTypesResource(tempInitItemNode)) {
                 isReload = true;
                 getLogger().info("Item " + tempInitItemNode.getName() + " needs to be reloaded");
                 initItemNode.remove();
@@ -743,6 +743,10 @@ public class InitializationProcessorImpl implements InitializationProcessor {
 
 
         return initializeItems;
+    }
+
+    private boolean isNodeTypesResource(final Node initItemNode) throws RepositoryException {
+        return initItemNode.hasProperty(HippoNodeType.HIPPO_NODETYPESRESOURCE);
     }
 
     private boolean isExtension(final URL configurationURL) {
