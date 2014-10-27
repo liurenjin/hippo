@@ -472,7 +472,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                     throw new RepositoryException("Cannot reload item " + node.getName() + ": removing node failed");
                 }
             } else {
-                getLogger().error("Cannot reload item " + node.getName() + " because context node could not be determined");
+                throw new RepositoryException("Cannot reload item " + node.getName() + " because context node could not be determined");
             }
         } else {
             InputStream is = null;
