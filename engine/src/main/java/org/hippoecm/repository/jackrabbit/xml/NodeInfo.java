@@ -15,6 +15,7 @@
  */
 package org.hippoecm.repository.jackrabbit.xml;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.NodeImpl;
 import org.apache.jackrabbit.core.id.NodeId;
 import org.apache.jackrabbit.spi.Name;
@@ -47,11 +48,7 @@ public class NodeInfo extends org.apache.jackrabbit.core.xml.NodeInfo {
     }
 
     public String mergeInsertBefore() {
-        if ("insert".equalsIgnoreCase(mergeBehavior)) {
-            return (location != null ? location : "");
-        } else {
-            return null;
-        }
+        return StringUtils.isEmpty(location) ? null : location;
     }
 
     public NodeImpl getOrigin() {
