@@ -111,6 +111,10 @@ public class PropInfo extends org.apache.jackrabbit.core.xml.PropInfo {
         return "conflict".equalsIgnoreCase(mergeBehavior);
     }
 
+    public boolean mergeSkip() {
+        return "skip".equalsIgnoreCase(mergeBehavior);
+    }
+
     public int mergeLocation(Value[] values) {
         if("append".equalsIgnoreCase(mergeBehavior)) {
             return values.length;
@@ -235,7 +239,9 @@ public class PropInfo extends org.apache.jackrabbit.core.xml.PropInfo {
         Value[] va = getValues(getTargetType(def), resolver);
 
         if (node.hasProperty(name)) {
-            if (mergeOverride()) {
+            if (mergeSkip()) {
+                return;
+            } else if (mergeOverride()) {
                 node.getProperty(name).remove();
             } else if (mergeCombine()) {
                 Property oldProperty = node.getProperty(name);
