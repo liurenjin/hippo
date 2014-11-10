@@ -29,6 +29,7 @@ import org.hippoecm.repository.util.JcrUtils;
 import org.hippoecm.repository.util.PropertyIterable;
 import org.onehippo.repository.update.BaseNodeUpdateVisitor;
 import org.onehippo.repository.util.JcrConstants;
+import org.slf4j.LoggerFactory;
 
 public abstract class BaseContentUpdateVisitor extends BaseNodeUpdateVisitor {
 
@@ -38,6 +39,9 @@ public abstract class BaseContentUpdateVisitor extends BaseNodeUpdateVisitor {
     public void initialize(final Session session) throws RepositoryException {
         this.session = session;
         session.getWorkspace().getObservationManager().setUserData(HippoNodeType.HIPPO_IGNORABLE);
+        if (log == null) {
+            setLogger(LoggerFactory.getLogger(getClass()));
+        }
     }
 
     @Override
