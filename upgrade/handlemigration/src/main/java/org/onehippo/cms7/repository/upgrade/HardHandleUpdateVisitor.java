@@ -54,6 +54,7 @@ import org.hippoecm.repository.util.PropertyIterable;
 import org.xml.sax.InputSource;
 
 import static org.hippoecm.repository.HippoStdNodeType.HIPPOSTD_STATE;
+import static org.hippoecm.repository.HippoStdNodeType.PUBLISHED;
 import static org.hippoecm.repository.HippoStdNodeType.UNPUBLISHED;
 import static org.hippoecm.repository.api.HippoNodeType.NT_HARDDOCUMENT;
 import static org.hippoecm.repository.api.HippoNodeType.NT_HARDHANDLE;
@@ -159,37 +160,55 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
         if (deleted) {
             clear(newPreview);
             newPreview.setPrimaryType(HippoNodeType.NT_DELETED);
-            defaultSession.save();
         } else {
             final Node oldPreview = getOldPreview(handle, identifier);
             if (oldPreview != null) {
+                clear(newPreview);
                 copy(oldPreview, newPreview);
                 oldPreview.remove();
-                defaultSession.save();
             } else {
-                newPreview.setProperty(HippoNodeType.HIPPO_AVAILABILITY, new String[]{"preview"});
-                for (Node sibling : new NodeIterable(handle.getNodes(handle.getName()))) {
-                    if (sibling.isSame(newPreview)) {
+                final Node published = getPublished(handle);
+                if (published != null) {
+                    clear(newPreview);
+                    copy(published,  newPreview);
+                }
+            }
+            fixAvailability(handle, newPreview);
+        }
+        defaultSession.save();
+    }
+
+    private Node getPublished(final Node handle) throws RepositoryException {
+        for (Node node : new NodeIterable(handle.getNodes(handle.getName()))) {
+            final String state = JcrUtils.getStringProperty(node, HIPPOSTD_STATE, null);
+            if (PUBLISHED.equals(state)) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private void fixAvailability(final Node handle, final Node newPreview) throws RepositoryException {
+        newPreview.setProperty(HippoNodeType.HIPPO_AVAILABILITY, new String[]{"preview"});
+        for (Node sibling : new NodeIterable(handle.getNodes(handle.getName()))) {
+            if (sibling.isSame(newPreview)) {
+                continue;
+            }
+            if (sibling.hasProperty(HippoNodeType.HIPPO_AVAILABILITY)) {
+                Value[] values = sibling.getProperty(HippoNodeType.HIPPO_AVAILABILITY).getValues();
+                List<String> asList = new ArrayList<>();
+                boolean modified = false;
+                for (Value value : values) {
+                    if ("preview".equals(value.getString())) {
+                        modified = true;
                         continue;
                     }
-                    if (sibling.hasProperty(HippoNodeType.HIPPO_AVAILABILITY)) {
-                        Value[] values = sibling.getProperty(HippoNodeType.HIPPO_AVAILABILITY).getValues();
-                        List<String> asList = new ArrayList<>();
-                        boolean modified = false;
-                        for (Value value : values) {
-                            if ("preview".equals(value.getString())) {
-                                modified = true;
-                                continue;
-                            }
-                            asList.add(value.getString());
-                        }
-                        if (modified) {
-                            JcrUtils.ensureIsCheckedOut(sibling);
-                            sibling.setProperty(HippoNodeType.HIPPO_AVAILABILITY, asList.toArray(new String[asList.size()]), PropertyType.STRING);
-                        }
-                    }
+                    asList.add(value.getString());
                 }
-                defaultSession.save();
+                if (modified) {
+                    JcrUtils.ensureIsCheckedOut(sibling);
+                    sibling.setProperty(HippoNodeType.HIPPO_AVAILABILITY, asList.toArray(new String[asList.size()]), PropertyType.STRING);
+                }
             }
         }
     }
