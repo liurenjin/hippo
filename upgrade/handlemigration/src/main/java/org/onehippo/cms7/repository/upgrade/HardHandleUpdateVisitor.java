@@ -171,6 +171,7 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
                 if (published != null) {
                     clear(newPreview);
                     copy(published,  newPreview);
+                    newPreview.setProperty(HIPPOSTD_STATE, UNPUBLISHED);
                 }
             }
             fixAvailability(handle, newPreview);
