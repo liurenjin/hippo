@@ -831,8 +831,8 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         final QueryResult result = session.getWorkspace().getQueryManager().createQuery(
                 "SELECT * FROM hipposys:initializeitem WHERE " +
                         "jcr:path = '/hippo:configuration/hippo:initialize/%' AND " +
-                        HippoNodeType.HIPPO_CONTENTROOT + " LIKE '" + contentRoot + "%' AND " +
-                        HippoNodeType.HIPPO_STATUS + " <> 'missing'", Query.SQL
+                        HippoNodeType.HIPPO_CONTENTROOT + " LIKE '" + contentRoot + "%' AND (" +
+                        HippoNodeType.HIPPO_STATUS + " <> 'missing' OR " + HippoNodeType.HIPPO_STATUS + " IS NULL)", Query.SQL
         ).execute();
         final List<Node> downStreamItems = new ArrayList<>();
         final String contextNodePath = contentRoot.equals("/") ? contentRoot + contextNodeName : contentRoot + "/" + contextNodeName;
