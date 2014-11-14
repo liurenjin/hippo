@@ -132,7 +132,7 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
 
                 final WebResourceBundle bundle = service.getJcrWebResourceBundle(session, bundleName);
                 final String message = createWebResourceBundleMessage(bundleName, version);
-                bundle.createTag(message);
+                bundle.createTag(message, session.getUserID());
                 session.save();
             } catch (IOException|RepositoryException|WebResourceException e) {
                 log.error("Failed to import web resource bundle '{}' from '{}'", bundleZipFile.getSubPath(),
@@ -168,7 +168,7 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
                 final String bundleName = bundleDir.getName();
                 final WebResourceBundle bundle = service.getJcrWebResourceBundle(session, bundleName);
                 final String message = createWebResourceBundleMessage(bundleName, version);
-                bundle.createTag(message);
+                bundle.createTag(message, session.getUserID());
                 session.save();
             } catch (IOException|RepositoryException|WebResourceException e) {
                 log.error("Failed to import web resource bundle from '{}'", bundleDir, e);
