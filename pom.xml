@@ -72,9 +72,9 @@
     <notice.project.name>Hippo Repository</notice.project.name>
 
     <hippo.commons.version>1.05.00-SNAPSHOT</hippo.commons.version>
-    <hippo.services.version>1.05.00-SNAPSHOT</hippo.services.version>
+    <hippo.services.version>1.05.00-webresources-deploy-SNAPSHOT</hippo.services.version>
     <hippo.services.eventbus.version>1.05.00-SNAPSHOT</hippo.services.eventbus.version>
-    <hippo.services.webresources.version>1.05.00-SNAPSHOT</hippo.services.webresources.version>
+    <hippo.services.webresources.version>1.05.00-webresources-deploy-SNAPSHOT</hippo.services.webresources.version>
     <hippo.utilities.version>1.04.00-SNAPSHOT</hippo.utilities.version>
 
     <!-- Test dependencies  -->

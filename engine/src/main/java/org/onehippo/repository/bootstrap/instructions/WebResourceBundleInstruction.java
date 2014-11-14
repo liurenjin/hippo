@@ -66,7 +66,7 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
         final String extensionSource = item.getExtensionSource();
 
         try {
-            final PostStartupTask importTask = createImportWebResourceTask(extensionSource, bundlePath, session);
+            final PostStartupTask importTask = createImportWebResourceTask(extensionSource, item.getNextVersion(), bundlePath, session);
             if (importTask != null && item.isReloadable()) {
                 final String bundleName = bundlePath.indexOf('/') == -1 ? bundlePath : bundlePath.substring(bundlePath.lastIndexOf('/') + 1);
                 final String contextNodePath = WebResourcesService.JCR_ROOT_PATH + "/" + bundleName;
@@ -82,27 +82,37 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
 
     }
 
-    private PostStartupTask createImportWebResourceTask(final String extensionSource, final String bundlePath, final Session session) throws IOException, URISyntaxException {
+    private PostStartupTask createImportWebResourceTask(final String extensionSource, final String version, final String bundlePath, final Session session) throws IOException, URISyntaxException {
         if (extensionSource == null) {
             return null;
         } else if (extensionSource.contains("jar!")) {
             final PartialZipFile bundleZipFile = new PartialZipFile(getBaseZipFileFromURL(new URL(extensionSource)), bundlePath);
-            return new ImportWebResourceBundleFromZipTask(session, bundleZipFile);
+            return new ImportWebResourceBundleFromZipTask(session, version, bundleZipFile);
         } else if (extensionSource.startsWith("file:")) {
             final File extensionFile = FileUtils.toFile(new URL(extensionSource));
             final File bundleDir = new File(extensionFile.getParent(), bundlePath);
-            return new ImportWebResourceBundleFromDirectoryTask(session, bundleDir);
+            return new ImportWebResourceBundleFromDirectoryTask(session, version, bundleDir);
         }
         return null;
+    }
+
+    private static String createWebResourceBundleMessage(final String bundleName, final String version) {
+        String message = "Deploy web resource bundle '" + bundleName + "'";
+        if (version != null) {
+            message += " version " + version;
+        }
+        return message;
     }
 
     private class ImportWebResourceBundleFromZipTask implements PostStartupTask {
 
         private final Session session;
+        private final String version;
         private final PartialZipFile bundleZipFile;
 
-        public ImportWebResourceBundleFromZipTask(final Session session, final PartialZipFile bundleZipFile) {
+        public ImportWebResourceBundleFromZipTask(final Session session, final String version, final PartialZipFile bundleZipFile) {
             this.session = session;
+            this.version = version;
             this.bundleZipFile = bundleZipFile;
         }
 
@@ -115,7 +125,8 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
                 return;
             }
             try {
-                service.importJcrWebResourceBundle(session, bundleZipFile);
+                final String message = createWebResourceBundleMessage(bundleZipFile.getName(), version);
+                service.importJcrWebResourceBundle(session, bundleZipFile, message);
                 session.save();
             } catch (IOException|RepositoryException|WebResourceException e) {
                 log.error("Failed to import web resource bundle '{}' from '{}'", bundleZipFile.getSubPath(),
@@ -127,10 +138,12 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
     private class ImportWebResourceBundleFromDirectoryTask implements PostStartupTask {
 
         private final Session session;
+        private final String version;
         private final File bundleDir;
 
-        public ImportWebResourceBundleFromDirectoryTask(final Session session, final File bundleDir) {
+        public ImportWebResourceBundleFromDirectoryTask(final Session session, final String version, final File bundleDir) {
             this.session = session;
+            this.version = version;
             this.bundleDir = bundleDir;
         }
 
@@ -143,7 +156,8 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
                 return;
             }
             try {
-                service.importJcrWebResourceBundle(session, bundleDir);
+                final String message = createWebResourceBundleMessage(bundleDir.getName(), version);
+                service.importJcrWebResourceBundle(session, bundleDir, message);
                 session.save();
             } catch (IOException|RepositoryException|WebResourceException e) {
                 log.error("Failed to import web resource bundle from '{}'", bundleDir, e);

@@ -412,12 +412,12 @@ public class InitializeItem {
             log.debug("Item {} is not reloadable", getName());
             return false;
         }
-        final String itemVersion = getVersion(tempItemNode);
-        if (itemVersion != null) {
-            final String existingItemVersion = getVersion(itemNode);
-            final boolean isNewer = isNewerVersion(itemVersion, existingItemVersion);
+        final String nextVersion = getNextVersion();
+        if (nextVersion != null) {
+            final String existingVersion = getVersion();
+            final boolean isNewer = isNewerVersion(nextVersion, existingVersion);
             log.debug("Comparing item versions of item {}: new version = {}; old version = {}; newer = {}",
-                    getName(), itemVersion, existingItemVersion, isNewer);
+                    getName(), nextVersion, existingVersion, isNewer);
             if (!isNewer) {
                 return false;
             }
@@ -436,6 +436,14 @@ public class InitializeItem {
 
     private String getVersion(Node itemNode) throws RepositoryException {
         return itemNode != null ? JcrUtils.getStringProperty(itemNode, HIPPO_VERSION, null) : null;
+    }
+
+    public String getVersion() throws RepositoryException {
+        return getVersion(itemNode);
+    }
+
+    public String getNextVersion() throws RepositoryException {
+        return getVersion(tempItemNode);
     }
 
     private String getModuleVersion(Node itemNode) throws RepositoryException {
