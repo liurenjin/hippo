@@ -25,6 +25,7 @@ import javax.jcr.Session;
 
 import org.apache.commons.io.FileUtils;
 import org.onehippo.cms7.services.HippoServiceRegistry;
+import org.onehippo.cms7.services.webresources.WebResourceBundle;
 import org.onehippo.cms7.services.webresources.WebResourceException;
 import org.onehippo.cms7.services.webresources.WebResourcesService;
 import org.onehippo.repository.bootstrap.InitializeInstruction;
@@ -119,18 +120,23 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
         @Override
         public void execute() {
             final WebResourcesService service = HippoServiceRegistry.getService(WebResourcesService.class);
+            final String bundleName = bundleZipFile.getName();
             if (service == null) {
                 log.error("Failed to import web resource bundle '{}' from '{}': missing service for '{}'",
-                        bundleZipFile.getSubPath(), bundleZipFile.getName(), WebResourcesService.class.getName());
+                        bundleZipFile.getSubPath(), bundleName, WebResourcesService.class.getName());
                 return;
             }
             try {
-                final String message = createWebResourceBundleMessage(bundleZipFile.getName(), version);
-                service.importJcrWebResourceBundle(session, bundleZipFile, message);
+                service.importJcrWebResourceBundle(session, bundleZipFile);
+                session.save();
+
+                final WebResourceBundle bundle = service.getJcrWebResourceBundle(session, bundleName);
+                final String message = createWebResourceBundleMessage(bundleName, version);
+                bundle.createTag(message);
                 session.save();
             } catch (IOException|RepositoryException|WebResourceException e) {
                 log.error("Failed to import web resource bundle '{}' from '{}'", bundleZipFile.getSubPath(),
-                        bundleZipFile.getName(), e);
+                        bundleName, e);
             }
         }
     }
@@ -156,8 +162,13 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
                 return;
             }
             try {
-                final String message = createWebResourceBundleMessage(bundleDir.getName(), version);
-                service.importJcrWebResourceBundle(session, bundleDir, message);
+                service.importJcrWebResourceBundle(session, bundleDir);
+                session.save();
+
+                final String bundleName = bundleDir.getName();
+                final WebResourceBundle bundle = service.getJcrWebResourceBundle(session, bundleName);
+                final String message = createWebResourceBundleMessage(bundleName, version);
+                bundle.createTag(message);
                 session.save();
             } catch (IOException|RepositoryException|WebResourceException e) {
                 log.error("Failed to import web resource bundle from '{}'", bundleDir, e);

@@ -311,7 +311,7 @@ public class InitializationProcessorTest extends RepositoryTestCase {
         final PostStartupTask importWebResources = tasks.get(0);
 
         Capture<ZipFile> capturedZip = new Capture();
-        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), and(capture(capturedZip), isA(ZipFile.class)), anyObject(String.class));
+        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), and(capture(capturedZip), isA(ZipFile.class)));
         expectLastCall();
 
         replay(webResourcesService);
@@ -338,7 +338,7 @@ public class InitializationProcessorTest extends RepositoryTestCase {
         final PostStartupTask reimportWebresources = reloadTasks.get(0);
 
         EasyMock.reset(webResourcesService);
-        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), anyObject(ZipFile.class), anyObject(String.class));
+        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), anyObject(ZipFile.class));
         expectLastCall();
 
         replay(webResourcesService);
@@ -361,7 +361,7 @@ public class InitializationProcessorTest extends RepositoryTestCase {
         final PostStartupTask importWebResources = tasks.get(0);
 
         final File testBundleDir = new File(FileUtils.toFile(testBundleUrl).getParent(), "webresourcebundle");
-        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), eq(testBundleDir), anyObject(String.class));
+        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), eq(testBundleDir));
         expectLastCall();
 
         replay(webResourcesService);
@@ -378,7 +378,7 @@ public class InitializationProcessorTest extends RepositoryTestCase {
         final PostStartupTask reimportWebresources = reloadTasks.get(0);
 
         EasyMock.reset(webResourcesService);
-        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), eq(testBundleDir), anyObject(String.class));
+        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), eq(testBundleDir));
         expectLastCall();
 
         replay(webResourcesService);
@@ -401,7 +401,7 @@ public class InitializationProcessorTest extends RepositoryTestCase {
         final PostStartupTask importWebResources = tasks.get(0);
 
         final File testBundleDir = new File(FileUtils.toFile(testBundleUrl).getParent(), "noSuchDirectory");
-        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), eq(testBundleDir), anyObject(String.class));
+        webResourcesService.importJcrWebResourceBundle(anyObject(Session.class), eq(testBundleDir));
         expectLastCall().andThrow(new WebResourceException("simulate a web resource exception during import"));
 
         replay(webResourcesService);
