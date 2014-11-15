@@ -120,10 +120,10 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
         @Override
         public void execute() {
             final WebResourcesService service = HippoServiceRegistry.getService(WebResourcesService.class);
-            final String bundleName = bundleZipFile.getName();
+            final String bundleName = bundleZipFile.getSubPath();
             if (service == null) {
                 log.error("Failed to import web resource bundle '{}' from '{}': missing service for '{}'",
-                        bundleZipFile.getSubPath(), bundleName, WebResourcesService.class.getName());
+                        bundleName, bundleZipFile.getName(), WebResourcesService.class.getName());
                 return;
             }
             try {
@@ -135,8 +135,7 @@ public class WebResourceBundleInstruction extends InitializeInstruction {
                 bundle.createTag(message, session.getUserID());
                 session.save();
             } catch (IOException|RepositoryException|WebResourceException e) {
-                log.error("Failed to import web resource bundle '{}' from '{}'", bundleZipFile.getSubPath(),
-                        bundleName, e);
+                log.error("Failed to import web resource bundle '{}' from '{}'", bundleName, bundleZipFile.getName(), e);
             }
         }
     }
