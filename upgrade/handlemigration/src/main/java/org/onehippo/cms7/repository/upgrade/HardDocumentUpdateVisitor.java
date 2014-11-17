@@ -18,27 +18,41 @@ package org.onehippo.cms7.repository.upgrade;
 import javax.jcr.Node;
 import javax.jcr.Property;
 import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NodeType;
 import javax.jcr.version.VersionHistory;
 import javax.jcr.version.VersionManager;
 
 import org.apache.jackrabbit.core.version.VersionHistoryRemover;
-import org.hippoecm.repository.HippoStdNodeType;
-import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.util.JcrUtils;
+
+import static org.hippoecm.repository.HippoStdNodeType.NT_RELAXED;
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_PATHS;
+import static org.hippoecm.repository.api.HippoNodeType.NT_DOCUMENT;
+import static org.hippoecm.repository.api.HippoNodeType.NT_HARDDOCUMENT;
+import static org.hippoecm.repository.api.HippoNodeType.NT_HARDHANDLE;
 
 public class HardDocumentUpdateVisitor extends BaseContentUpdateVisitor {
 
     @Override
     public boolean doUpdate(final Node node) throws RepositoryException {
         log.debug("Migrating {}", node.getPath());
-        if (node.getParent().isNodeType(HippoNodeType.NT_HARDHANDLE)) {
+        if (node.getParent().isNodeType(NT_HARDHANDLE)) {
+            log.warn("Cannot run HardDocumentUpdater on {} because parent is still a hardhandle", node.getPath());
+            return false;
+        }
+        if (!node.isNodeType(NT_HARDDOCUMENT)) {
+            log.warn("Cannot run HardDocumentUpdater on {} because node is not a harddocument", node.getPath());
+            return false;
+        }
+        if (hardDocumentIsInherited(node)) {
+            log.warn("Cannot run HardDocumentUpdater on {} because harddocument is an inherited node type", node.getPath());
             return false;
         }
         try {
             final VersionHistory versionHistory = getVersionHistory(node);
             JcrUtils.ensureIsCheckedOut(node);
             removeHippoPaths(node);
-            removeMixin(node, HippoNodeType.NT_HARDDOCUMENT);
+            removeMixin(node, NT_HARDDOCUMENT);
             session.save();
             VersionHistoryRemover.removeVersionHistory(versionHistory);
         } finally {
@@ -55,22 +69,31 @@ public class HardDocumentUpdateVisitor extends BaseContentUpdateVisitor {
      */
     private void removeHippoPaths(final Node node) throws RepositoryException {
         boolean removeRelaxed = false;
-        if (!node.isNodeType(HippoNodeType.NT_DOCUMENT) && !node.isNodeType(HippoStdNodeType.NT_RELAXED)) {
-            node.addMixin(HippoStdNodeType.NT_RELAXED);
+        if (!node.isNodeType(NT_DOCUMENT) && !node.isNodeType(NT_RELAXED)) {
+            node.addMixin(NT_RELAXED);
             removeRelaxed = true;
         }
-        final Property paths = JcrUtils.getPropertyIfExists(node, HippoNodeType.HIPPO_PATHS);
+        final Property paths = JcrUtils.getPropertyIfExists(node, HIPPO_PATHS);
         if (paths != null) {
             paths.remove();
         }
         if (removeRelaxed) {
-            node.removeMixin(HippoStdNodeType.NT_RELAXED);
+            node.removeMixin(NT_RELAXED);
         }
     }
 
     private VersionHistory getVersionHistory(final Node node) throws RepositoryException {
         final VersionManager versionManager = session.getWorkspace().getVersionManager();
         return versionManager.getVersionHistory(node.getPath());
+    }
+
+    private boolean hardDocumentIsInherited(Node node) throws RepositoryException {
+        for (NodeType type : node.getMixinNodeTypes()) {
+            if (type.getName().equals(NT_HARDDOCUMENT)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }
