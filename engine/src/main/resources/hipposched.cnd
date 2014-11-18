@@ -52,6 +52,3 @@
 
 [hipposched:jobgroup] > nt:base
 + * (hipposched:job) = hipposched:job
-
-[hipposched:jobregistry] > nt:base
-+ * (hipposched:jobgroup) = hipposched:jobgroup
