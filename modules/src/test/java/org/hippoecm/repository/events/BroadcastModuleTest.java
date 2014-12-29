@@ -134,7 +134,7 @@ public class BroadcastModuleTest extends RepositoryTestCase {
     }
 
     private void waitForEvent(final Listener listener) throws Exception {
-        int n = 50;
+        int n = 51;
         while (n-- > 0) {
             Thread.sleep(100);
             if (listener.seenEvents.size() == 1) {
