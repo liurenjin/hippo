@@ -156,7 +156,7 @@ public class MockNode extends MockItem implements HippoNode {
     }
 
     @Override
-    public Node addNode(final String relPath, final String primaryNodeTypeName) throws PathNotFoundException, ConstraintViolationException {
+    public MockNode addNode(final String relPath, final String primaryNodeTypeName) throws PathNotFoundException, ConstraintViolationException {
         return addMockNode(relPath, primaryNodeTypeName);
     }
 

@@ -31,6 +31,7 @@ import org.onehippo.repository.documentworkflow.action.CopyVariantAction;
 import org.onehippo.repository.documentworkflow.action.DeleteRequestAction;
 import org.onehippo.repository.documentworkflow.action.IsModifiedAction;
 import org.onehippo.repository.documentworkflow.action.ListVersionsVariantAction;
+import org.onehippo.repository.scxml.LogEventAction;
 import org.onehippo.repository.documentworkflow.action.MoveDocumentAction;
 import org.onehippo.repository.documentworkflow.action.RejectRequestAction;
 import org.onehippo.repository.documentworkflow.action.RenameDocumentAction;
@@ -87,6 +88,7 @@ public class BaseDocumentWorkflowTest {
         registry.addCustomAction(scxmlNode, "http://www.onehippo.org/cms7/repository/scxml", "versionRestoreTo", VersionRestoreToAction.class.getName());
         registry.addCustomAction(scxmlNode, "http://www.onehippo.org/cms7/repository/scxml", "requestAction", RequestActionAction.class.getName());
         registry.addCustomAction(scxmlNode, "http://www.onehippo.org/cms7/repository/scxml", "rejectRequest", RejectRequestAction.class.getName());
+        registry.addCustomAction(scxmlNode, "http://www.onehippo.org/cms7/repository/scxml", "logEvent", LogEventAction.class.getName());
         registry.setUp(scxmlConfigNode);
 
         HippoServiceRegistry.registerService(registry, SCXMLRegistry.class);
@@ -99,13 +101,13 @@ public class BaseDocumentWorkflowTest {
     }
 
     protected static MockNode addVariant(MockNode handle, String state) throws RepositoryException {
-        MockNode variant = (MockNode)handle.addNode(handle.getName(), HippoStdPubWfNodeType.HIPPOSTDPUBWF_DOCUMENT);
+        MockNode variant = handle.addNode(handle.getName(), HippoStdPubWfNodeType.HIPPOSTDPUBWF_DOCUMENT);
         variant.setProperty(HippoStdNodeType.HIPPOSTD_STATE, state);
         return variant;
     }
 
     protected static MockNode addRequest(MockNode handle, String type, boolean workflowRequest) throws RepositoryException {
-        MockNode variant = (MockNode)handle.addNode(HippoStdPubWfNodeType.HIPPO_REQUEST,
+        MockNode variant = handle.addNode(HippoStdPubWfNodeType.HIPPO_REQUEST,
                 workflowRequest ? HippoStdPubWfNodeType.NT_HIPPOSTDPUBWF_REQUEST : HippoSchedJcrConstants.HIPPOSCHED_WORKFLOW_JOB);
         variant.setProperty(HippoStdPubWfNodeType.HIPPOSTDPUBWF_TYPE, type);
         variant.addMixin(HippoNodeType.NT_REQUEST);

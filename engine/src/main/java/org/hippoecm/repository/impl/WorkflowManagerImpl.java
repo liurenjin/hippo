@@ -447,6 +447,12 @@ public class WorkflowManagerImpl implements WorkflowManager {
             return userSession;
         }
 
+        @Override
+        public Node getSubject() {
+            return subject;
+        }
+
+        @Override
         public Session getSubjectSession() {
             return subjectSession;
         }
@@ -459,6 +465,16 @@ public class WorkflowManagerImpl implements WorkflowManager {
         @Override
         public RepositoryMap getWorkflowConfiguration() {
             return workflowDefinition.getWorkflowConfiguration();
+        }
+
+        @Override
+        public String getInteraction() {
+            return INTERACTION.get();
+        }
+
+        @Override
+        public String getInteractionId() {
+            return INTERACTION_ID.get();
         }
     }
 }

@@ -16,6 +16,7 @@
 
 package org.onehippo.repository.scxml;
 
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
@@ -62,6 +63,11 @@ public class MockWorkflowContext implements WorkflowContext {
     }
 
     @Override
+    public Node getSubject() {
+        return null;
+    }
+
+    @Override
     public Session getSubjectSession() {
         return session;
     }
@@ -79,5 +85,15 @@ public class MockWorkflowContext implements WorkflowContext {
     @Override
     public MockRepositoryMap getWorkflowConfiguration() {
         return configuration;
+    }
+
+    @Override
+    public String getInteraction() {
+        return null;
+    }
+
+    @Override
+    public String getInteractionId() {
+        return null;
     }
 }
