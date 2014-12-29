@@ -502,11 +502,33 @@
     <sv:property sv:name="hippo:sequence" sv:type="Double">
       <sv:value>602.0</sv:value>
     </sv:property>
-    <sv:property sv:name="hippo:reloadonstartup" sv:type="Boolean">
-      <sv:value>true</sv:value>
+  </sv:node>
+  <sv:node sv:name="hipposcxml-scxml-configuration-logevent-documentworkflow-action-patch">
+    <sv:property sv:name="jcr:primaryType" sv:type="Name">
+      <sv:value>hippo:initializeitem</sv:value>
     </sv:property>
-    <sv:property sv:name="hippo:version" sv:type="String">
-      <sv:value>2.26.10</sv:value>
+    <sv:property sv:name="hippo:contentresource" sv:type="String">
+      <sv:value>logevent-documentworkflow-action-patch.xml</sv:value>
+    </sv:property>
+    <sv:property sv:name="hippo:contentroot" sv:type="String">
+      <sv:value>/hippo:configuration/hippo:modules/scxmlregistry/hippo:moduleconfig/hipposcxml:definitions/documentworkflow</sv:value>
+    </sv:property>
+    <sv:property sv:name="hippo:sequence" sv:type="Double">
+      <sv:value>603.0</sv:value>
+    </sv:property>
+  </sv:node>
+  <sv:node sv:name="hipposcxml-scxml-configuration-documentworkflow-source-patch">
+    <sv:property sv:name="jcr:primaryType" sv:type="Name">
+      <sv:value>hippo:initializeitem</sv:value>
+    </sv:property>
+    <sv:property sv:name="hippo:contentresource" sv:type="String">
+      <sv:value>documentworkflow-source-patch.xml</sv:value>
+    </sv:property>
+    <sv:property sv:name="hippo:contentroot" sv:type="String">
+      <sv:value>/hippo:configuration/hippo:modules/scxmlregistry/hippo:moduleconfig/hipposcxml:definitions</sv:value>
+    </sv:property>
+    <sv:property sv:name="hippo:sequence" sv:type="Double">
+      <sv:value>604.0</sv:value>
     </sv:property>
   </sv:node>
 
