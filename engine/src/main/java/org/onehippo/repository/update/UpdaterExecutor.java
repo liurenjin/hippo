@@ -137,7 +137,6 @@ public class UpdaterExecutor implements EventListener {
         } catch (RepositoryException e) {
             error("Failed to log cancel event for " + updaterInfo.getName(), e);
         }
-        report.finish();
         cancelled = true;
     }
 
