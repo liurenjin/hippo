@@ -275,6 +275,8 @@ public class DereferencedSysViewImportHandler extends DefaultHandler {
                 }
             } else {
                 currentPropValue = new BufferedStringValue(resolver, ValueFactoryImpl.getInstance());
+                String xsiType = atts.getValue("xsi:type");
+                currentPropValue.setBase64("xs:base64Binary".equals(xsiType));
             }
         } else {
             throw new SAXException(new InvalidSerializedDataException(
