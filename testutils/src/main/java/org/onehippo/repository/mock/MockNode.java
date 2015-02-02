@@ -25,6 +25,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -103,7 +104,7 @@ public class MockNode extends MockItem implements HippoNode {
 
         this.identifier = UUID.randomUUID().toString();
         this.properties = new HashMap<String, MockProperty>();
-        this.children = new HashMap<String, List<MockNode>>();
+        this.children = new LinkedHashMap<>();
         this.primaryItemName = null;
 
         if (primaryTypeName != null) {
