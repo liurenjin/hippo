@@ -101,7 +101,6 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     private static final Logger log = LoggerFactory.getLogger(InitializationProcessorImpl.class);
 
     private static final String INIT_PATH = "/" + HippoNodeType.CONFIGURATION_PATH + "/" + HippoNodeType.INITIALIZE_PATH;
-    private static final long LOCK_TIMEOUT = Long.getLong("repo.bootstrap.lock.timeout", 60 * 5);
     private static final long LOCK_ATTEMPT_INTERVAL = 1000 * 2;
 
     private static final String SYSTEM_RELOAD_PROPERTY = "repo.bootstrap.reload-on-startup";
@@ -228,22 +227,17 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     public boolean lock(final Session session) throws RepositoryException {
         ensureIsLockable(session, INIT_PATH);
         final LockManager lockManager = session.getWorkspace().getLockManager();
-        final long t1 = System.currentTimeMillis();
         while (true) {
             log.debug("Attempting to obtain lock");
             try {
-                lockManager.lock(INIT_PATH, false, false, LOCK_TIMEOUT, getClusterNodeId(session));
+                lockManager.lock(INIT_PATH, false, false, Long.MAX_VALUE, getClusterNodeId(session));
                 log.debug("Lock successfully obtained");
                 return true;
             } catch (LockException e) {
-                if (System.currentTimeMillis() - t1 < LOCK_TIMEOUT * 1000) {
-                    log.debug("Obtaining lock failed, reattempting in {} ms", LOCK_ATTEMPT_INTERVAL);
-                    try {
-                        Thread.sleep(LOCK_ATTEMPT_INTERVAL);
-                    } catch (InterruptedException ignore) {
-                    }
-                } else {
-                    return false;
+                log.debug("Obtaining lock failed, reattempting in {} ms", LOCK_ATTEMPT_INTERVAL);
+                try {
+                    Thread.sleep(LOCK_ATTEMPT_INTERVAL);
+                } catch (InterruptedException ignore) {
                 }
             }
         }
@@ -257,7 +251,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             lockManager.unlock(INIT_PATH);
             log.debug("Lock successfully released");
         } catch (LockException e) {
-            log.warn("Current session no longer holds a lock, please set a longer repo.bootstrap.lock.timeout");
+            log.warn("Current session no longer holds a lock");
         }
     }
 
