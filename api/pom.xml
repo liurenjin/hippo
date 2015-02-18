@@ -61,6 +61,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
+          <additionalparam>-Xdoclint:none</additionalparam>
           <sourcepath>${basedir}/src/main/java</sourcepath>
         </configuration>
       </plugin>
