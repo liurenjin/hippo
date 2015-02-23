@@ -34,7 +34,6 @@ import javax.jcr.Property;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import javax.jcr.ValueFactory;
 import javax.jcr.Workspace;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
@@ -44,6 +43,7 @@ import javax.jcr.security.AccessControlManager;
 import javax.jcr.version.VersionException;
 import javax.transaction.xa.XAResource;
 
+import org.apache.commons.lang.StringUtils;
 import org.hippoecm.repository.api.HippoSession;
 import org.onehippo.repository.api.ContentResourceLoader;
 import org.onehippo.repository.security.User;
@@ -101,12 +101,12 @@ public class MockSession implements HippoSession {
     }
 
     @Override
-    public Node getNode(final String absPath) throws RepositoryException {
+    public MockNode getNode(final String absPath) throws RepositoryException {
         Item item = getItem(absPath);
         if (!item.isNode()) {
             throw new PathNotFoundException("No such node: " + absPath);
         }
-        return (Node) item;
+        return (MockNode) item;
     }
 
     @Override
@@ -222,7 +222,7 @@ public class MockSession implements HippoSession {
     }
 
     @Override
-    public ValueFactory getValueFactory() {
+    public MockValueFactory getValueFactory() {
         return new MockValueFactory();
     }
 
@@ -253,9 +253,15 @@ public class MockSession implements HippoSession {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void move(final String srcAbsPath, final String destAbsPath) {
-        throw new UnsupportedOperationException();
+    public void move(final String srcAbsPath, final String destAbsPath) throws RepositoryException {
+        String destParentAbsPath = StringUtils.substringBeforeLast(destAbsPath, "/");
+        destParentAbsPath = destParentAbsPath.isEmpty() ? "/" : destParentAbsPath;
+        final String destName = StringUtils.substringAfterLast(destAbsPath, "/");
+        final MockNode destParentNode = getNode(destParentAbsPath);
+        final MockNode srcNode = getNode(srcAbsPath);
+        srcNode.remove();
+        srcNode.setName(destName);
+        destParentNode.addNode(srcNode);
     }
 
     @Override

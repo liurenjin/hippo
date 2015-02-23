@@ -18,9 +18,7 @@ package org.onehippo.repository.mock;
 import javax.jcr.Item;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.ItemVisitor;
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
-import javax.jcr.Session;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +47,10 @@ public abstract class MockItem implements Item {
         return isRootNode() ? "" : name;
     }
 
+    public void setName(final String name) {
+        this.name = name;
+    }
+
     protected boolean isRootNode() {
         return parent == null;
     }
@@ -58,7 +60,7 @@ public abstract class MockItem implements Item {
     }
 
     @Override
-    public Node getParent() throws ItemNotFoundException {
+    public MockNode getParent() throws ItemNotFoundException {
         if (isRootNode()) {
             throw new ItemNotFoundException("A root node does not have a parent");
         }
@@ -101,7 +103,7 @@ public abstract class MockItem implements Item {
     }
 
     @Override
-    public Session getSession() throws RepositoryException {
+    public MockSession getSession() throws RepositoryException {
         MockNode root = getRootNode();
         return new MockSession(root);
     }

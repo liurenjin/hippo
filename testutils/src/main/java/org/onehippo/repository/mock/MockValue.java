@@ -93,6 +93,14 @@ public class MockValue implements Value {
             this.binary = value.getBinary();
             break;
         }
+        case PropertyType.NAME: {
+            this.stringifiedValue = value.getString();
+            break;
+        }
+        case PropertyType.URI: {
+            this.stringifiedValue = value.getString();
+            break;
+        }
         default:
         {
             throw new UnsupportedOperationException("Unsupported type, " + type + ". Only primitive number/string values are currently supported.");

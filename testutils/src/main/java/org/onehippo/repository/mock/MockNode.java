@@ -103,8 +103,9 @@ public class MockNode extends MockItem implements HippoNode {
         super(name);
 
         this.identifier = UUID.randomUUID().toString();
-        this.properties = new HashMap<String, MockProperty>();
+        this.properties = new HashMap<>();
         this.children = new LinkedHashMap<>();
+        this.mixins = new HashSet<>();
         this.primaryItemName = null;
 
         if (primaryTypeName != null) {
@@ -592,7 +593,7 @@ public class MockNode extends MockItem implements HippoNode {
     @Override
     public int getIndex() throws RepositoryException {
         if (!isRootNode()) {
-            List<MockNode> childList = ((MockNode) getParent()).children.get(getName());
+            List<MockNode> childList = getParent().children.get(getName());
             if (childList != null) {
                 int offset = childList.indexOf(this);
                 if (offset != -1) {
@@ -657,7 +658,14 @@ public class MockNode extends MockItem implements HippoNode {
 
     @Override
     public NodeType[] getMixinNodeTypes() {
-        throw new UnsupportedOperationException();
+        NodeType[] nodeTypes = new NodeType[mixins.size()];
+        int pos = 0;
+        for (String mixin : mixins) {
+            final MockNodeType mockNodeType = new MockNodeType(mixin);
+            nodeTypes[pos] = mockNodeType;
+            pos++;
+        }
+        return nodeTypes;
     }
 
     @Override
