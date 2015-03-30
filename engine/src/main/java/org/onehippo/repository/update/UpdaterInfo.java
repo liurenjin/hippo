@@ -29,8 +29,11 @@ import javax.jcr.RepositoryException;
 import org.apache.commons.io.IOUtils;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.util.JcrUtils;
+import org.hippoecm.repository.util.RepoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Strings;
 
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyCodeSource;
@@ -78,7 +81,11 @@ class UpdaterInfo {
         identifier = node.getIdentifier();
         name = node.getName();
         path = JcrUtils.getStringProperty(node, HippoNodeType.HIPPOSYS_PATH, null);
-        query = JcrUtils.getStringProperty(node, HippoNodeType.HIPPOSYS_QUERY, null);
+        String queryString = JcrUtils.getStringProperty(node, HippoNodeType.HIPPOSYS_QUERY, null);
+        if (!Strings.isNullOrEmpty(queryString)) {
+            queryString = RepoUtils.encodeXpath(queryString);
+        }
+        query = queryString;
         language = JcrUtils.getStringProperty(node, HippoNodeType.HIPPOSYS_LANGUAGE, DEFAULT_QUERY_LANGUAGE);
 
         boolean hasPath = path != null && !path.isEmpty();
