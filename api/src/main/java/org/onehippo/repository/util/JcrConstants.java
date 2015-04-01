@@ -33,6 +33,7 @@ public final class JcrConstants {
     public static final String NT_BASE = "nt:base";
     public static final String NT_UNSTRUCTURED = "nt:unstructured";
     public static final String NT_VERSION = "nt:version";
+    public static final String NT_VERSION_HISTORY = "nt:versionHistory";
     public static final String NT_FROZEN_NODE = "nt:frozenNode";
 
     // ------------------------------------------ properties
