@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.onehippo.cms7.jaxrs;
 
 import java.security.AccessControlException;
@@ -24,40 +25,46 @@ import javax.jcr.SimpleCredentials;
 import javax.ws.rs.core.Response;
 
 import org.apache.cxf.configuration.security.AuthorizationPolicy;
-import org.apache.cxf.jaxrs.ext.RequestHandler;
-import org.apache.cxf.jaxrs.model.ClassResourceInfo;
-import org.apache.cxf.message.Message;
+import org.apache.cxf.jaxrs.JAXRSInvoker;
+import org.apache.cxf.message.Exchange;
+import org.apache.cxf.message.MessageContentsList;
 import org.onehippo.cms7.services.HippoServiceRegistry;
 import org.onehippo.repository.RepositoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JaxrsAuthenticationHandler implements RequestHandler {
+public class RepositoryAuthenticatingJaxrsInvoker extends JAXRSInvoker {
 
-    private static final Logger log = LoggerFactory.getLogger(JaxrsAuthenticationHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(RepositoryAuthenticatingJaxrsInvoker.class);
 
     @Override
-    public Response handleRequest(final Message message, final ClassResourceInfo resourceClass) {
-        final AuthorizationPolicy policy = message.get(AuthorizationPolicy.class);
+    public Object invoke(Exchange exchange, Object requestParams, Object resourceObject) {
+        Object result = null;
+        final AuthorizationPolicy policy = exchange.getInMessage().get(AuthorizationPolicy.class);
         if (policy == null) {
-            return Response.status(401).header("WWW-Authenticate", "Basic").build();
-        } else {
+            result = new MessageContentsList(Response.status(Response.Status.UNAUTHORIZED).header("WWW-Authenticate", "Basic").build());
+        }
+        else {
             Session session = null;
             try {
                 final RepositoryService repository = HippoServiceRegistry.getService(RepositoryService.class);
                 session = repository.login(new SimpleCredentials(policy.getUserName(), policy.getPassword().toCharArray()));
-//                session.checkPermission("/content/document", "hippo:rest");
-                return null;
-            } catch (AccessControlException | LoginException e) {
-                return Response.status(401).header("WWW-Authenticate", "Basic").build();
-            } catch (RepositoryException e) {
+                result = super.invoke(exchange, requestParams, resourceObject);
+            }
+            catch (AccessControlException | LoginException e) {
+                result = new MessageContentsList(Response.status(Response.Status.UNAUTHORIZED).header("WWW-Authenticate", "Basic").build());
+            }
+            catch (RepositoryException e) {
                 log.error("Error during login", e);
-                return Response.serverError().entity(e).build();
-            } finally {
+                result = new MessageContentsList(Response.serverError().build());
+            }
+            finally
+            {
                 if (session != null) {
                     session.logout();
                 }
             }
         }
+        return result;
     }
 }
