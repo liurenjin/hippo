@@ -199,7 +199,6 @@ engine/src/main/java/org/hippoecm/repository/security/user/DelegatingHippoUserMa
 engine/src/main/java/org/hippoecm/repository/security/user/DelegatingUserManager.java -text
 engine/src/main/java/org/hippoecm/repository/security/user/HippoUserManager.java -text
 engine/src/main/java/org/hippoecm/repository/security/user/RepositoryUserManager.java svneol=native#text/plain
-engine/src/main/java/org/onehippo/cms7/jaxrs/JaxrsApplication.java -text
 engine/src/main/java/org/onehippo/repository/modules/ModuleManager.java -text
 engine/src/main/java/org/onehippo/repository/modules/ModuleRegistration.java -text
 engine/src/main/java/org/onehippo/repository/modules/ModuleRegistry.java -text
@@ -281,6 +280,9 @@ engine/src/test/resources/org/hippoecm/repository/unittest.pdf -text
 engine/src/test/resources/org/hippoecm/repository/words_on_new_line_without_spaces.pdf -text
 engine/src/test/resources/repository-test.cnd -text
 engine/src/test/resources/role-jcrread.xml svneol=native#text/plain
+jaxrs/pom.xml svneol=native#text/plain
+jaxrs/src/main/resources/hippoecm-extension.xml svneol=native#text/plain
+jaxrs/src/main/resources/role-restuser.xml svneol=native#text/plain
 ldap/src/main/resources/hippoldap.cnd -text
 modules/pom.xml svneol=native#text/plain
 modules/src/main/java/org/hippoecm/repository/jackrabbit/FacetResultSetProvider.java -text
