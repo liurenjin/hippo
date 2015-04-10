@@ -67,8 +67,8 @@ public final class RepositoryJaxrsService {
         public ServletConfigWrapper(ServletConfig config, Map<String,String> properties) {
             this.config = config;
             this.params = new HashMap<>();
-            for (Enumeration<String> e = config.getInitParameterNames(); e.hasMoreElements();) {
-                String param = e.nextElement();
+            for (Enumeration e = config.getInitParameterNames(); e.hasMoreElements();) {
+                String param = (String)e.nextElement();
                 params.put(param, config.getInitParameter(param));
             }
             if (properties != null) {
@@ -142,26 +142,36 @@ public final class RepositoryJaxrsService {
                     }
                 };
             }
-            JAXRSServerFactoryBean endpointFactory =
-                    ResourceUtils.createApplication(app, true, false);
+            JAXRSServerFactoryBean endpointFactory = ResourceUtils.createApplication(app, true, false);
             endpointFactory.setAddress(address);
             endpointFactory.setDestinationFactory(destinationFactory);
-            if (endpoint.getAuthorizationNodePath() == null) {
-                endpointFactory.setInvoker(jaxrsInvoker);
+
+            CXFRepositoryJaxrsEndpoint cxfEndpoint =
+                    endpoint instanceof CXFRepositoryJaxrsEndpoint ? (CXFRepositoryJaxrsEndpoint)endpoint : null;
+
+            JAXRSInvoker invoker = cxfEndpoint != null ? cxfEndpoint.getInvoker() : null;
+
+            if (invoker == null) {
+                if (endpoint.getAuthorizationNodePath() == null) {
+                    invoker = jaxrsInvoker;
+                }
+                else {
+                    invoker = new AuthorizingRepositoryJaxrsInvoker(endpoint.getAuthorizationNodePath(),
+                            endpoint.getAuthorizationPermission());
+                }
             }
-            else {
-                endpointFactory.setInvoker(
-                        new AuthorizingRepositoryJaxrsInvoker(endpoint.getAuthorizationNodePath(),
-                                endpoint.getAuthorizationPermission()));
+            endpointFactory.setInvoker(invoker);
+
+            if (cxfEndpoint != null) {
+                cxfEndpoint.preCreate(endpointFactory);
             }
+
             Server server = endpointFactory.create();
-            if (endpoint instanceof CXFRepositoryJaxrsEndpoint) {
-                CXFRepositoryJaxrsEndpoint cxfEndpoint = (CXFRepositoryJaxrsEndpoint)endpoint;
-                server.getEndpoint().getInInterceptors().addAll(cxfEndpoint.getInInterceptors());
-                server.getEndpoint().getInFaultInterceptors().addAll(cxfEndpoint.getInFaultInterceptors());
-                server.getEndpoint().getOutInterceptors().addAll(cxfEndpoint.getOutInterceptors());
-                server.getEndpoint().getOutFaultInterceptors().addAll(cxfEndpoint.getOutFaultInterceptors());
+
+            if (cxfEndpoint != null) {
+                cxfEndpoint.postCreate(server);
             }
+
             servers.put(endpointFactory.getAddress(), server);
         }
     }
