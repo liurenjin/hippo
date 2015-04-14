@@ -80,25 +80,26 @@ public class DefaultCopyHandler implements CopyHandler {
     @Override
     public void startNode(final NodeInfo nodeInfo) throws RepositoryException {
         try {
-            NodeDefinition definition = nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes());
-            if (!definition.isProtected()) {
-                final Node childDest;
-                if (definition.isAutoCreated() && nodeInfo.getIndex() == 1 && getCurrent().hasNode(nodeInfo.getName())) {
-                    childDest = getCurrent().getNode(nodeInfo.getName());
-                } else {
-                    childDest = getCurrent().addNode(nodeInfo.getName(), nodeInfo.getNodeTypeName());
+            if (getCurrent() != null) {
+                NodeDefinition definition = nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes());
+                if (!definition.isProtected()) {
+                    final Node childDest;
+                    if (definition.isAutoCreated() && nodeInfo.getIndex() == 1 && getCurrent().hasNode(nodeInfo.getName())) {
+                        childDest = getCurrent().getNode(nodeInfo.getName());
+                    } else {
+                        childDest = getCurrent().addNode(nodeInfo.getName(), nodeInfo.getNodeTypeName());
+                    }
+                    for (String nodeTypeName : nodeInfo.getMixinNames()) {
+                        childDest.addMixin(nodeTypeName);
+                    }
+                    setCurrent(childDest);
+                    return;
                 }
-                for (String nodeTypeName : nodeInfo.getMixinNames()) {
-                    childDest.addMixin(nodeTypeName);
-                }
-                setCurrent(childDest);
-            } else {
-                setCurrent(null);
             }
         } catch (ConstraintViolationException cve) {
             log.error("Unable to create node from NodeInfo " + nodeInfo + ": " + cve.toString());
-            setCurrent(null);
         }
+        setCurrent(null);
     }
 
     @Override
