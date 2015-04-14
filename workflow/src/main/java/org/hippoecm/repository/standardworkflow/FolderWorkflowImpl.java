@@ -915,8 +915,10 @@ public class FolderWorkflowImpl implements FolderWorkflow, EmbedWorkflow, Intern
 
             if (renames.containsKey(path + "/_node/_name") && !renames.containsKey(path + "/" + name)) {
                 path = path + "/_node";
+            } else if (renames.containsKey(path + "/_name")) {
+                path = path + "/_name";
             } else {
-                path = path + "/" + nodeInfo.getName();
+                path = path + "/" + name;
             }
             final NodeInfo childInfo = new NodeInfo(name, nodeInfo.getIndex(), primaryType, mixins.toArray(new String[mixins.size()]));
             super.startNode(childInfo);
