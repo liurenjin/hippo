@@ -73,7 +73,7 @@
     <notice.project.name>Hippo Repository</notice.project.name>
 
     <hippo.commons.version>1.04.00</hippo.commons.version>
-    <hippo.services.version>1.04.03-SNAPSHOT</hippo.services.version>
+    <hippo.services.version>1.04.03</hippo.services.version>
     <hippo.services.eventbus.version>1.04.00</hippo.services.eventbus.version>
     <hippo.utilities.version>1.03.00</hippo.utilities.version>
 
