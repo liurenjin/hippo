@@ -22,6 +22,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NodeDefinition;
 import javax.jcr.nodetype.NodeType;
+import javax.jcr.nodetype.NodeTypeManager;
 
 public final class NodeInfo {
 
@@ -70,15 +71,20 @@ public final class NodeInfo {
         return mixinNames;
     }
 
-    public NodeDefinition getApplicableChildNodeDef(NodeType[] nodeTypes)
-            throws ConstraintViolationException {
+    public NodeDefinition getApplicableChildNodeDef(NodeType[] parentTypes, NodeTypeManager nodeTypeManager) throws RepositoryException {
         NodeDefinition residualDefinition = null;
-        for (NodeType nodeType : nodeTypes) {
-            NodeDefinition[] nodeDefs = nodeType.getChildNodeDefinitions();
-            for (NodeDefinition nodeDef : nodeDefs) {
+        NodeType nodeType = nodeTypeManager.getNodeType(nodeTypeName);
+        for (NodeType parentType : parentTypes) {
+            for (NodeDefinition nodeDef : parentType.getChildNodeDefinitions()) {
                 if (nodeDef.getName().equals(getName())) {
+                    if (!hasRequiredPrimaryNodeType(nodeType, nodeDef)) {
+                        continue;
+                    }
                     return nodeDef;
                 } else if ("*".equals(nodeDef.getName())) {
+                    if (!hasRequiredPrimaryNodeType(nodeType, nodeDef)) {
+                        continue;
+                    }
                     residualDefinition = nodeDef;
                 }
             }
@@ -87,6 +93,15 @@ public final class NodeInfo {
             return residualDefinition;
         }
         throw new ConstraintViolationException("Cannot set property " + this.getName());
+    }
+
+    private boolean hasRequiredPrimaryNodeType(final NodeType nodeType, final NodeDefinition definition) {
+        for (String primaryNodeTypeName : definition.getRequiredPrimaryTypeNames()) {
+            if (!nodeType.isNodeType(primaryNodeTypeName)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

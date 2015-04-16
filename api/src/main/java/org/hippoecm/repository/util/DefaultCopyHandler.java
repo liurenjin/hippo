@@ -23,6 +23,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NodeDefinition;
 import javax.jcr.nodetype.NodeType;
+import javax.jcr.nodetype.NodeTypeManager;
 import javax.jcr.nodetype.PropertyDefinition;
 
 import org.onehippo.repository.util.JcrConstants;
@@ -55,10 +56,12 @@ public class DefaultCopyHandler implements CopyHandler {
 
     private final Stack<Node> nodes = new Stack<>();
     private final Stack<NodeType[]> nodeTypes = new Stack<>();
+    protected final NodeTypeManager nodeTypeManager;
 
     public DefaultCopyHandler(Node node) throws RepositoryException {
         JcrUtils.ensureIsCheckedOut(node);
         setCurrent(node);
+        nodeTypeManager = node.getSession().getWorkspace().getNodeTypeManager();
     }
 
     protected DefaultCopyHandler setCurrent(Node node) throws RepositoryException {
@@ -81,7 +84,7 @@ public class DefaultCopyHandler implements CopyHandler {
     public void startNode(final NodeInfo nodeInfo) throws RepositoryException {
         try {
             if (getCurrent() != null) {
-                NodeDefinition definition = nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes());
+                NodeDefinition definition = nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes(), nodeTypeManager);
                 if (!definition.isProtected()) {
                     final Node childDest;
                     if (definition.isAutoCreated() && nodeInfo.getIndex() == 1 && getCurrent().hasNode(nodeInfo.getName())) {
