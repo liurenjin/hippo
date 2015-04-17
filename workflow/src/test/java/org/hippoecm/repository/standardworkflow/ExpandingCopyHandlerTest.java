@@ -38,7 +38,6 @@ public class ExpandingCopyHandlerTest extends RepositoryTestCase {
         super.setUp();
         final Node test = session.getRootNode().addNode("test");
         source = test.addNode("source");
-        source.addMixin("hippo:translated");
         source.setProperty("prop", "value");
         source.setProperty("multiprop", new String[] { "value1", "value2" });
         source.addNode("node").setProperty("prop", "value");
@@ -153,5 +152,28 @@ public class ExpandingCopyHandlerTest extends RepositoryTestCase {
         final Value[] values = session.getProperty("/test/target/source/multiprop").getValues();
         assertEquals(2, values.length);
         assertEquals("substitute", values[1].getString());
+    }
+
+    @Test
+    public void testNodeIsNotRenamedIfDefinitionDisallowsIt() throws Exception {
+        Node handle = session.getNode("/test").addNode("handle", "hippo:handle");
+        handle.addMixin("hippo:translated");
+        final Node translation = handle.addNode("hippo:translation", "hippo:translation");
+        translation.setProperty("hippo:language", "test");
+        translation.setProperty("hippo:message", "test");
+        handle.addNode("document", "hippo:document");
+
+        final Map<String, String[]> substitutes = new HashMap<String, String[]>() {{
+            put("./_node/_name", new String[] { "substitute" });
+        }};
+        ExpandingCopyHandler handler = new ExpandingCopyHandler(target, substitutes, session.getValueFactory());
+        JcrUtils.copyTo(handle, handler);
+        // according to the substitution pattern hippo:translation node should have been renamed
+        // but this doesn't happen because it would violate the constraints on the handle node
+        assertTrue(session.nodeExists("/test/target/handle/hippo:translation"));
+        // the document node at the same level does get renamed
+        assertTrue(session.nodeExists("/test/target/handle/substitute"));
+        assertEquals("hippo:translation", session.getNode("/test/target/handle/hippo:translation").getPrimaryNodeType().getName());
+        assertEquals("hippo:document", session.getNode("/test/target/handle/substitute").getPrimaryNodeType().getName());
     }
 }

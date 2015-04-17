@@ -27,6 +27,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import javax.jcr.ValueFactory;
 import javax.jcr.nodetype.ConstraintViolationException;
+import javax.jcr.nodetype.NodeType;
 
 import org.hippoecm.repository.util.DefaultCopyHandler;
 import org.hippoecm.repository.util.NodeInfo;
@@ -65,33 +66,35 @@ class ExpandingCopyHandler extends DefaultCopyHandler {
                 }
             }
 
-            String primaryType = nodeInfo.getNodeTypeName();
+            NodeType primaryType = nodeInfo.getNodeType();
             for (Map.Entry<String, String[]> entry : renames.entrySet()) {
                 final String key = entry.getKey();
                 final String[] substitutes = entry.getValue();
                 if (key.endsWith("/jcr:primaryType") && substitutes != null && substitutes.length > 0) {
                     if (path.matchKey(key, name, true)) {
-                        primaryType = substitutes[0];
+                        primaryType = nodeTypeManager.getNodeType(substitutes[0]);
                         break;
                     }
                 }
             }
 
-            List<String> mixins = Arrays.asList(nodeInfo.getMixinNames());
+            List<NodeType> mixins = Arrays.asList(nodeInfo.getMixinTypes());
             for (Map.Entry<String, String[]> entry : renames.entrySet()) {
                 final String key = entry.getKey();
                 final String[] substitutes = entry.getValue();
                 if (key.endsWith("/jcr:mixinTypes") && substitutes != null && substitutes.length > 0) {
                     if (path.matchKey(key, name, true)) {
-                        Collections.addAll(mixins, substitutes);
+                        for (String substitute : substitutes) {
+                            mixins.add(nodeTypeManager.getNodeType(substitute));
+                        }
                         break;
                     }
                 }
             }
 
-            nodeInfo = new NodeInfo(name, nodeInfo.getIndex(), primaryType, mixins.toArray(new String[mixins.size()]));
+            nodeInfo = new NodeInfo(name, nodeInfo.getIndex(), primaryType, mixins.toArray(new NodeType[mixins.size()]));
             try {
-                nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes(), nodeTypeManager);
+                nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes());
                 path.push(origName, name);
             } catch (ConstraintViolationException e) {
                 // no applicable child node definition
@@ -99,7 +102,7 @@ class ExpandingCopyHandler extends DefaultCopyHandler {
                 if (origName.equals(name)) {
                     throw e;
                 }
-                nodeInfo = new NodeInfo(origName, nodeInfo.getIndex(), primaryType, mixins.toArray(new String[mixins.size()]));
+                nodeInfo = new NodeInfo(origName, nodeInfo.getIndex(), primaryType, mixins.toArray(new NodeType[mixins.size()]));
                 path.push(origName, null);
             }
         }

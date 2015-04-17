@@ -28,27 +28,17 @@ public final class NodeInfo {
 
     private final String name;
 
-    private final String nodeTypeName;
+    private final NodeType nodeType;
 
-    private final String[] mixinNames;
+    private final NodeType[] mixinTypes;
 
     private final int index;
 
-    public NodeInfo(String name, int index, String nodeTypeName, String[] mixinNames) {
+    public NodeInfo(String name, int index, NodeType nodeType, NodeType[] mixinTypes) {
         this.name = name;
-        this.nodeTypeName = nodeTypeName;
-        this.mixinNames = mixinNames;
+        this.nodeType = nodeType;
         this.index = index;
-    }
-
-    public NodeInfo(String name, int index, NodeType nodeType, NodeType[] mixins) {
-        this.name = name;
-        this.nodeTypeName = nodeType.getName();
-        this.mixinNames = new String[mixins.length];
-        for (int i = 0; i < mixins.length; i++) {
-            mixinNames[i] = mixins[i].getName();
-        }
-        this.index = index;
+        this.mixinTypes = mixinTypes;
     }
 
     public NodeInfo(Node child) throws RepositoryException {
@@ -63,26 +53,35 @@ public final class NodeInfo {
         return index;
     }
 
+    public NodeType getNodeType() { return nodeType; }
+
     public String getNodeTypeName() {
-        return nodeTypeName;
+        return nodeType.getName();
+    }
+
+    public NodeType[] getMixinTypes() {
+        return mixinTypes;
     }
 
     public String[] getMixinNames() {
+        final String[] mixinNames = new String[mixinTypes.length];
+        for (int i = 0; i < mixinTypes.length; i++) {
+            mixinNames[i] = mixinTypes[i].getName();
+        }
         return mixinNames;
     }
 
-    public NodeDefinition getApplicableChildNodeDef(NodeType[] parentTypes, NodeTypeManager nodeTypeManager) throws RepositoryException {
+    public NodeDefinition getApplicableChildNodeDef(NodeType[] parentTypes) throws RepositoryException {
         NodeDefinition residualDefinition = null;
-        NodeType nodeType = nodeTypeManager.getNodeType(nodeTypeName);
         for (NodeType parentType : parentTypes) {
             for (NodeDefinition nodeDef : parentType.getChildNodeDefinitions()) {
                 if (nodeDef.getName().equals(getName())) {
-                    if (!hasRequiredPrimaryNodeType(nodeType, nodeDef)) {
+                    if (!hasRequiredPrimaryNodeType(nodeDef)) {
                         continue;
                     }
                     return nodeDef;
                 } else if ("*".equals(nodeDef.getName())) {
-                    if (!hasRequiredPrimaryNodeType(nodeType, nodeDef)) {
+                    if (!hasRequiredPrimaryNodeType(nodeDef)) {
                         continue;
                     }
                     residualDefinition = nodeDef;
@@ -95,7 +94,7 @@ public final class NodeInfo {
         throw new ConstraintViolationException("Cannot set property " + this.getName());
     }
 
-    private boolean hasRequiredPrimaryNodeType(final NodeType nodeType, final NodeDefinition definition) {
+    private boolean hasRequiredPrimaryNodeType(final NodeDefinition definition) {
         for (String primaryNodeTypeName : definition.getRequiredPrimaryTypeNames()) {
             if (!nodeType.isNodeType(primaryNodeTypeName)) {
                 return false;

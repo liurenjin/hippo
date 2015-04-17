@@ -84,7 +84,7 @@ public class DefaultCopyHandler implements CopyHandler {
     public void startNode(final NodeInfo nodeInfo) throws RepositoryException {
         try {
             if (getCurrent() != null) {
-                NodeDefinition definition = nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes(), nodeTypeManager);
+                NodeDefinition definition = nodeInfo.getApplicableChildNodeDef(getCurrentNodeTypes());
                 if (!definition.isProtected()) {
                     final Node childDest;
                     if (definition.isAutoCreated() && nodeInfo.getIndex() == 1 && getCurrent().hasNode(nodeInfo.getName())) {

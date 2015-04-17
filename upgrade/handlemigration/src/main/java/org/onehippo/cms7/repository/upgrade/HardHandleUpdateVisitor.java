@@ -33,6 +33,7 @@ import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import javax.jcr.Value;
 import javax.jcr.nodetype.NodeType;
+import javax.jcr.nodetype.NodeTypeManager;
 import javax.jcr.version.Version;
 import javax.jcr.version.VersionHistory;
 import javax.jcr.version.VersionIterator;
@@ -286,17 +287,18 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
         JcrUtils.copyTo(srcNode, new OverwritingCopyHandler(destNode) {
 
             protected void replaceMixins(final Node node, final NodeInfo nodeInfo) throws RepositoryException {
-                String[] oldMixins = nodeInfo.getMixinNames();
-                Set<String> mixins = new HashSet<>();
-                for (String mixin : oldMixins) {
-                    if (!NT_HARDDOCUMENT.equals(mixin)) {
+                NodeType[] oldMixins = nodeInfo.getMixinTypes();
+                Set<NodeType> mixins = new HashSet<>();
+                for (NodeType mixin : oldMixins) {
+                    if (!NT_HARDDOCUMENT.equals(mixin.getName())) {
                         mixins.add(mixin);
                     } else {
-                        mixins.add(MIX_VERSIONABLE);
+                        final NodeTypeManager nodeTypeManager = defaultSession.getWorkspace().getNodeTypeManager();
+                        mixins.add(nodeTypeManager.getNodeType(MIX_VERSIONABLE));
                     }
                 }
-                String[] newMixins = mixins.toArray(new String[mixins.size()]);
-                NodeInfo newInfo = new NodeInfo(nodeInfo.getName(), nodeInfo.getIndex(), nodeInfo.getNodeTypeName(), newMixins);
+                NodeType[] newMixins = mixins.toArray(new NodeType[mixins.size()]);
+                NodeInfo newInfo = new NodeInfo(nodeInfo.getName(), nodeInfo.getIndex(), nodeInfo.getNodeType(), newMixins);
                 super.replaceMixins(node, newInfo);
             }
 
