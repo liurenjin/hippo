@@ -204,7 +204,7 @@ class ExpandingCopyHandler extends DefaultCopyHandler {
                     continue;
                 }
                 if (elements[i].equals("_name")) {
-                    if (!substitute.equals(substitutes.get(i))) {
+                    if (substitute == null || !substitute.equals(substitutes.get(i))) {
                         // matches substitute
                         return false;
                     }
