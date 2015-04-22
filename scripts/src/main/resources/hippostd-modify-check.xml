@@ -55,7 +55,7 @@ import org.onehippo.repository.update.BaseNodeUpdateVisitor;&#xd;
  * that it cannot locate the node or property pointed to in the hippostd:modify property value&#xd;
  * in the configured template. Manually check these values to see if there is a problem.&#xd;
  */&#xd;
-class CheckStdModifyPropertiesUpdateVisitor extends BaseNodeUpdateVisitor {&#xd;
+class CheckStdModifyProperties extends BaseNodeUpdateVisitor {&#xd;
 &#xd;
   @Override&#xd;
   public boolean doUpdate(final Node node) throws RepositoryException {&#xd;
