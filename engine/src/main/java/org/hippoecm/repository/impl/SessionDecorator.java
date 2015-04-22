@@ -109,11 +109,13 @@ public class SessionDecorator extends org.hippoecm.repository.decorating.Session
     }
 
     boolean computeDerivedData(Node node) throws RepositoryException {
-        return derivedEngine.compute(node);
+        return (derivedEngine != null) ? derivedEngine.compute(node) : false;
     }
 
     public void postValidation() throws ConstraintViolationException, RepositoryException {
-        derivedEngine.validate();
+        if (derivedEngine != null) {
+            derivedEngine.validate();
+        }
     }
 
     public void postDerivedData(boolean enabled) {
@@ -206,7 +208,9 @@ public class SessionDecorator extends org.hippoecm.repository.decorating.Session
             postMountEnabled(false);
             getInternalHippoSession().importDereferencedXML(parentAbsPath, in, referredResourceLoader, uuidBehavior, referenceBehavior, mergeBehavior);
             // run derived data engine
-            derivedEngine.save();
+            if (derivedEngine != null) {
+                derivedEngine.save();
+            }
             //session.save();
         } finally {
             postMountEnabled(true);
