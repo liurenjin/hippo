@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2014 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2008-2015 Hippo B.V. (http://www.onehippo.com)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import javax.jcr.Value;
 
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.HippoNodeType;
+import org.hippoecm.repository.api.HippoSession;
 import org.hippoecm.repository.api.RepositoryMap;
 import org.hippoecm.repository.api.Workflow;
 import org.hippoecm.repository.api.WorkflowContext;
@@ -83,6 +84,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
     public WorkflowManagerImpl(Session session) throws RepositoryException {
         this.userSession = session;
         this.rootSession = session.impersonate(new SimpleCredentials("workflowuser", new char[] {}));
+        ((HippoSession) rootSession).disableVirtualLayers();
         configuration = session.getRootNode().getNode(CONFIGURATION_PATH + "/" + WORKFLOWS_PATH).getIdentifier();
         workflowLogger = new WorkflowLogger(rootSession);
     }
