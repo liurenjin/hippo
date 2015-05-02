@@ -14,7 +14,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<sv:node xmlns:sv="http://www.jcp.org/jcr/sv/1.0" sv:name="new-image" xmlns:esv="http://www.onehippo.org/jcr/xmlimport">
+<sv:node xmlns:sv="http://www.jcp.org/jcr/sv/1.0" sv:name="new-image"
+         xmlns:esv="http://www.onehippo.org/jcr/xmlimport" esv:merge="combine">
   <sv:property sv:name="hippostd:modify" sv:type="String" esv:merge="override">
     <sv:value>./_name</sv:value>
     <sv:value>$name</sv:value>
