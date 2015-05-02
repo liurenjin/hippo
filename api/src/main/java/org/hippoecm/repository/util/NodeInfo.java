@@ -108,7 +108,7 @@ public final class NodeInfo {
         return mixinTypeNames;
     }
 
-    public NodeDefinition getApplicableChildNodeDef(NodeType[] parentTypes) throws RepositoryException {
+    public NodeDefinition getApplicableChildNodeDef(NodeType[] parentTypes) throws ConstraintViolationException {
         NodeDefinition residualDefinition = null;
         for (NodeType parentType : parentTypes) {
             for (NodeDefinition nodeDef : parentType.getChildNodeDefinitions()) {
@@ -129,6 +129,15 @@ public final class NodeInfo {
             return residualDefinition;
         }
         throw new ConstraintViolationException("Cannot set property " + this.getName());
+    }
+
+    public boolean hasApplicableChildNodeDef(NodeType[] parentTypes) {
+        try {
+            getApplicableChildNodeDef(parentTypes);
+            return true;
+        } catch (ConstraintViolationException e) {
+            return false;
+        }
     }
 
     private boolean hasRequiredPrimaryNodeType(final NodeDefinition definition) {

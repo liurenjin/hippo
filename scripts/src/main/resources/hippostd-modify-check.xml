@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<sv:node sv:name="StdModifyPropertyCheck" xmlns:sv="http://www.jcp.org/jcr/sv/1.0">
+<sv:node sv:name="StdModifyPropertyCheck" xmlns:sv="http://www.jcp.org/jcr/sv/1.0" xmlns:esv="http://www.onehippo.org/jcr/xmlimport">
   <sv:property sv:name="jcr:primaryType" sv:type="Name">
     <sv:value>hipposys:updaterinfo</sv:value>
   </sv:property>
@@ -28,122 +28,7 @@
     <sv:value>//element(*, hippostd:templatequery)</sv:value>
   </sv:property>
   <sv:property sv:name="hipposys:script" sv:type="String">
-    <sv:value>package org.hippoecm.frontend.plugins.cms.admin.updater&#xd;
-&#xd;
-import java.util.ArrayList;&#xd;
-import java.util.Collection;&#xd;
-import java.util.Collections;&#xd;
-import java.util.Iterator;&#xd;
-import java.util.Stack;&#xd;
-&#xd;
-import javax.jcr.ItemVisitor;&#xd;
-import javax.jcr.Node;&#xd;
-import javax.jcr.Property;&#xd;
-import javax.jcr.RepositoryException;&#xd;
-import javax.jcr.Value;&#xd;
-import javax.jcr.query.Query;&#xd;
-import javax.jcr.query.QueryManager;&#xd;
-&#xd;
-import org.hippoecm.repository.util.JcrUtils;&#xd;
-import org.hippoecm.repository.util.NodeIterable;&#xd;
-import org.onehippo.repository.update.BaseNodeUpdateVisitor;&#xd;
-&#xd;
-/**&#xd;
- * This script checks the hippostd:modify properties on hippostd:templatequery nodes&#xd;
- * for possible misconfigurations. This script will not make any changes but emit a warning&#xd;
- * whenever it encounters a hippostd:modify value that might be invalid. This means&#xd;
- * that it cannot locate the node or property pointed to in the hippostd:modify property value&#xd;
- * in the configured template. Manually check these values to see if there is a problem.&#xd;
- */&#xd;
-class CheckStdModifyProperties extends BaseNodeUpdateVisitor {&#xd;
-&#xd;
-  @Override&#xd;
-  public boolean doUpdate(final Node node) throws RepositoryException {&#xd;
-    for (Node template : getTemplates(node)) {&#xd;
-      final PathVisitor visitor = new PathVisitor();&#xd;
-      template.accept(visitor);&#xd;
-      for (String relPath : getPathsToCheck(node)) {&#xd;
-        if (!visitor.hasPath(relPath)) {&#xd;
-          log.warn("Possible invalid hippostd:modify value at {}: not found {}", node.getPath(), relPath);&#xd;
-        }&#xd;
-      }&#xd;
-    }&#xd;
-    return false;&#xd;
-  }&#xd;
-&#xd;
-  Iterable&lt;Node&gt; getTemplates(Node queryNode) throws RepositoryException {&#xd;
-    final QueryManager queryManager = queryNode.getSession().getWorkspace().getQueryManager();&#xd;
-    final Query query = queryManager.getQuery(queryNode);&#xd;
-    return new NodeIterable(query.execute().getNodes());&#xd;
-  }&#xd;
-&#xd;
-  Iterable&lt;String&gt; getPathsToCheck(Node queryNode) throws RepositoryException {&#xd;
-    final Property modify = JcrUtils.getPropertyIfExists(queryNode, "hippostd:modify");&#xd;
-    if (modify == null) {&#xd;
-      return Collections.emptyList();&#xd;
-    }&#xd;
-    Collection&lt;String&gt; result = new ArrayList&lt;&gt;();&#xd;
-    for (Value value : modify.getValues()) {&#xd;
-      final String key = value.getString();&#xd;
-      if (key.startsWith("./") &amp;&amp; key.lastIndexOf('/') != 1) {&#xd;
-        result.add(key);&#xd;
-      }&#xd;
-    }&#xd;
-    return result;&#xd;
-  }&#xd;
-&#xd;
-  boolean undoUpdate(Node node) {&#xd;
-    throw new UnsupportedOperationException('Updater does not implement undoUpdate method')&#xd;
-  }&#xd;
-&#xd;
-  static class PathVisitor implements ItemVisitor {&#xd;
-&#xd;
-    private final Stack&lt;String&gt; current = new Stack&lt;&gt;();&#xd;
-    private Collection&lt;String&gt; paths = new ArrayList&lt;&gt;();&#xd;
-    @Override&#xd;
-    public void visit(final Property property) throws RepositoryException {&#xd;
-    }&#xd;
-&#xd;
-    @Override&#xd;
-    public void visit(final Node node) throws RepositoryException {&#xd;
-      current.push(node.getName());&#xd;
-      addPath();&#xd;
-      for (Node child : new NodeIterable(node.getNodes())) {&#xd;
-        visit(child);&#xd;
-      }&#xd;
-      current.pop();&#xd;
-    }&#xd;
-&#xd;
-    private void addPath() {&#xd;
-      StringBuilder sb = new StringBuilder(".");&#xd;
-      for (String elt : current) {&#xd;
-        sb.append("/").append(elt);&#xd;
-      }&#xd;
-      paths.add(sb.toString());&#xd;
-    }&#xd;
-&#xd;
-    boolean hasPath(String path) {&#xd;
-      String[] elements = path.split("/");&#xd;
-      Collection&lt;String&gt; candidates = new ArrayList&lt;&gt;(paths);&#xd;
-      for (int i = 0; i &lt; elements.length - 1; i++) {&#xd;
-        final Iterator&lt;String&gt; iterator = candidates.iterator();&#xd;
-        while (iterator.hasNext()) {&#xd;
-          if (!matchElement(elements[i], i, iterator.next())) {&#xd;
-            iterator.remove();&#xd;
-          }&#xd;
-        }&#xd;
-      }&#xd;
-      return candidates.size() &gt; 0;&#xd;
-    }&#xd;
-&#xd;
-    private boolean matchElement(final String element, final int i, final String candidate) {&#xd;
-      final String[] elements = candidate.split("/");&#xd;
-      return elements.length &gt; i &amp;&amp; (element.equals("_node") || element.equals("_name") || element.equals(elements[i]));&#xd;
-    }&#xd;
-  }&#xd;
-&#xd;
-&#xd;
-}</sv:value>
+    <sv:value esv:file="hippostd-modify-check.groovy"/>
   </sv:property>
   <sv:property sv:name="hipposys:throttle" sv:type="Long">
     <sv:value>0</sv:value>

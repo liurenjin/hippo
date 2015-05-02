@@ -1,0 +1,13 @@
+<sv:node sv:name="new-smart-folder" xmlns:sv="http://www.jcp.org/jcr/sv/1.0"
+         xmlns:esv="http://www.onehippo.org/jcr/xmlimport" esv:merge="combine">
+  <sv:property sv:name="hippostd:modify" sv:type="String" esv:merge="override">
+    <sv:value>./_name</sv:value>
+    <sv:value>$name</sv:value>
+    <sv:value>./content/hippo:docbase</sv:value>
+    <sv:value>$docbase</sv:value>
+    <sv:value>./content/hippo:facets</sv:value>
+    <sv:value>$facet</sv:value>
+    <sv:value>./content/hippo:values</sv:value>
+    <sv:value>$value</sv:value>
+  </sv:property>
+</sv:node>
