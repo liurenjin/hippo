@@ -242,11 +242,11 @@
     <sv:property sv:name="hippostd:modify" sv:type="String">
       <sv:value>./_name</sv:value>
       <sv:value>$name</sv:value>
-      <sv:value>./_name/content/hippo:docbase</sv:value>
+      <sv:value>./content/hippo:docbase</sv:value>
       <sv:value>$docbase</sv:value>
-      <sv:value>./_name/content/hippo:facets</sv:value>
+      <sv:value>./content/hippo:facets</sv:value>
       <sv:value>$facet</sv:value>
-      <sv:value>./_name/content/hippo:values</sv:value>
+      <sv:value>./content/hippo:values</sv:value>
       <sv:value>$value</sv:value>
     </sv:property>
     <sv:node sv:name="hippostd:templates">
