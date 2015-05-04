@@ -115,6 +115,9 @@
 [hippo:translated] mixin
 + hippo:translation (hippo:translation) multiple
 
+[hippo:lockable] mixin
+- hippo:lockExpirationTime (date)
+
 // BOOTSTRAP
 
 [hippo:initializeitem] > nt:base
