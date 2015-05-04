@@ -85,7 +85,7 @@ public class PathsMigratorTest {
 
         if (!session.nodeExists("/configuration")) {
             session.importXML("/",
-                    getClass().getResourceAsStream("/org/hippoecm/repository/configuration.xml"),
+                    getClass().getResourceAsStream("configuration-old.xml"),
                     ImportUUIDBehavior.IMPORT_UUID_CREATE_NEW);
             session.save();
         }
