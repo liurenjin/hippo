@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hippoecm.repository.impl;
 
 import java.util.Calendar;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -25,7 +28,9 @@ import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
 import javax.jcr.lock.LockManager;
 
+import org.hippoecm.repository.jackrabbit.InternalHippoSession;
 import org.hippoecm.repository.util.JcrUtils;
+import org.onehippo.repository.locking.HippoLock;
 import org.onehippo.repository.locking.HippoLockManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +46,11 @@ public class LockManagerDecorator extends org.hippoecm.repository.decorating.Loc
         NO_TIMEOUT.setTimeInMillis(Long.MAX_VALUE);
     }
 
+    private final ScheduledExecutorService executor;
+
     public LockManagerDecorator(final Session session, final LockManager lockManager) {
         super(session, lockManager);
+        executor = ((InternalHippoSession) SessionDecorator.unwrap(session)).getExecutor();
     }
 
     public static LockManager unwrap(LockManager lockManager) {
@@ -68,7 +76,7 @@ public class LockManagerDecorator extends org.hippoecm.repository.decorating.Loc
     }
 
     @Override
-    public Lock lock(final String absPath, final boolean isDeep, final boolean isSessionScoped, final long timeoutHint, final String ownerInfo)
+    public HippoLock lock(final String absPath, final boolean isDeep, final boolean isSessionScoped, final long timeoutHint, final String ownerInfo)
             throws RepositoryException {
         if (isLocked(absPath)) {
             if (!expireLock(absPath)) {
@@ -77,11 +85,11 @@ public class LockManagerDecorator extends org.hippoecm.repository.decorating.Loc
         }
         final Lock lock = super.lock(absPath, isDeep, isSessionScoped, timeoutHint, ownerInfo);
         setTimeout(lock, timeoutHint);
-        return new LockDecorator(lock);
+        return new LockDecorator(lock, timeoutHint);
     }
 
     @Override
-    public Lock getLock(final String absPath) throws RepositoryException {
+    public HippoLock getLock(final String absPath) throws RepositoryException {
         return new LockDecorator(super.getLock(absPath));
     }
 
@@ -102,19 +110,28 @@ public class LockManagerDecorator extends org.hippoecm.repository.decorating.Loc
             lockNode.getSession().save();
         } catch (RepositoryException e) {
             if (log.isDebugEnabled()) {
-                log.error("Failed to set hippo:timeout on lock", e);
+                log.error("Failed to set {} on lock", HIPPO_LOCKEXPIRATIONTIME, e);
             } else {
-                log.error("Failed to set hippo:timeout on lock: {}", e.toString());
+                log.error("Failed to set {} on lock: {}", HIPPO_LOCKEXPIRATIONTIME, e.toString());
             }
         }
     }
 
-    public class LockDecorator implements Lock {
+    public class LockDecorator implements HippoLock {
 
-        private final Lock lock;
+        private Lock lock;
+        private volatile ScheduledFuture future;
+        private final Object monitor = this; // guards future
+        private final long timeout;
 
-        private LockDecorator(final Lock lock) {
+        private LockDecorator(final Lock lock, final long timeout) {
             this.lock = lock;
+            this.timeout = timeout;
+        }
+
+        private LockDecorator(final Lock lock) throws RepositoryException {
+            this.lock = lock;
+            timeout = -1;
         }
 
         @Override
@@ -162,5 +179,77 @@ public class LockManagerDecorator extends org.hippoecm.repository.decorating.Loc
             lock.refresh();
             setTimeout(lock, getSecondsRemaining());
         }
+
+        @Override
+        public void startKeepAlive() throws RepositoryException {
+            if (!isLive()) {
+                throw new LockException("Can't start a keep-alive on an unalive lock");
+            }
+            if (timeout == Long.MAX_VALUE) {
+                throw new LockException("Lock has no timeout");
+            }
+            if (timeout < 10) {
+                throw new LockException("Timeout must be at least 10 seconds to start keep-alive, was: " + timeout);
+            }
+            final long secondsRemaining = getSecondsRemaining();
+            long delay = secondsRemaining - 8;
+            if (secondsRemaining < 8) {
+                refresh();
+                delay = timeout - 8;
+            }
+            future = executor.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (monitor) {
+                        if (future.isCancelled()) {
+                            return;
+                        }
+                        boolean success = false;
+                        try {
+                            refresh();
+                            success = true;
+                        } catch(LockException e) {
+                            log.warn("Failed to refresh lock, this might have occurred due to a hick-up; trying to obtain new lock...");
+                            try {
+                                lock = lockManager.lock(lock.getNode().getPath(), lock.isDeep(), lock.isSessionScoped(), timeout, lock.getLockOwner());
+                                setTimeout(lock, timeout);
+                                success = true;
+                            } catch (RepositoryException e1) {
+                                if (log.isDebugEnabled()) {
+                                    log.error("Failed to refresh lock: " + e1);
+                                } else {
+                                    log.error("Failed to refresh lock", e1);
+                                }
+                            }
+                        } catch (RepositoryException e) {
+                            if (log.isDebugEnabled()) {
+                                log.error("Failed to refresh lock", e);
+                            } else {
+                                log.error("Failed to refresh lock: " + e);
+                            }
+                        }
+                        if (success) {
+                            try {
+                                startKeepAlive();
+                            } catch (RepositoryException e) {
+                                if (log.isDebugEnabled()) {
+                                    log.error("Failed to schedule next keep-alive", e);
+                                } else {
+                                    log.error("Failed to schedule next keep-alive: " + e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }, delay, TimeUnit.SECONDS);
+        }
+
+        @Override
+        public synchronized void stopKeepAlive() {
+            if (future != null) {
+                future.cancel(false);
+            }
+        }
+
     }
 }

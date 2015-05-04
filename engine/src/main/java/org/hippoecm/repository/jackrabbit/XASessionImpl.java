@@ -22,6 +22,7 @@ import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.InvalidSerializedDataException;
@@ -280,6 +281,11 @@ public class XASessionImpl extends org.apache.jackrabbit.core.XASessionImpl impl
     @Override
     public void registerSessionCloseCallback(HippoSession.CloseCallback callback) {
         helper.registerSessionCloseCallback(callback);
+    }
+
+    @Override
+    public ScheduledExecutorService getExecutor() {
+        return context.getRepositoryContext().getExecutor();
     }
 
     @Override

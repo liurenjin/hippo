@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 Hippo B.V. (http://www.onehippo.com)
+ * Copyright 2012-2013 Hippo B.V. (http://www.onehippo.com)
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hippoecm.repository;
+package org.onehippo.repository;
 
 import javax.jcr.Node;
 import javax.jcr.Session;
@@ -22,6 +22,7 @@ import javax.jcr.lock.LockManager;
 
 import org.hippoecm.repository.impl.LockManagerDecorator;
 import org.junit.Test;
+import org.onehippo.repository.locking.HippoLock;
 import org.onehippo.repository.locking.HippoLockManager;
 import org.onehippo.repository.testutils.RepositoryTestCase;
 import org.onehippo.repository.util.JcrConstants;
@@ -88,7 +89,6 @@ public class LockTest extends RepositoryTestCase {
 
     @Test
     public void testLockSucceedsAfterTimeout() throws Exception {
-        final Session anonSession = session.getRepository().login();
         final LockManager lockManager = session.getWorkspace().getLockManager();
         lockManager.lock("/test", false, false, 2l, null);
         Thread.sleep(1000l);
@@ -96,13 +96,39 @@ public class LockTest extends RepositoryTestCase {
         // but the lock is not released by jackrabbit internally
         LockManagerDecorator.unwrap(lockManager).getLock("/test").refresh();
         Thread.sleep(1001l);
-        final LockManager anonLockManager = anonSession.getWorkspace().getLockManager();
-        anonLockManager.lock("/test", false, false, Long.MAX_VALUE, null);
-        anonLockManager.isLocked("/test");
+        final Session session2 = session.impersonate(new SimpleCredentials("admin", new char[]{}));
+        final LockManager lockManager2 = session2.getWorkspace().getLockManager();
+        lockManager2.lock("/test", false, false, Long.MAX_VALUE, null);
+        lockManager2.isLocked("/test");
     }
 
     @Test
     public void testNodeLockUsesHippoLockManager() throws Exception {
-        assertTrue(session.getNode("/test").lock(false, false) instanceof LockManagerDecorator.LockDecorator);
+        assertTrue(session.getNode("/test").lock(false, false) instanceof HippoLock);
+    }
+
+    @Test
+    public void testLockKeepAliveKeepsLockAlive() throws Exception {
+        final HippoLockManager lockManager = (HippoLockManager) session.getWorkspace().getLockManager();
+        final HippoLock lock = lockManager.lock("/test", false, false, 10l, null);
+        lock.startKeepAlive();
+        Thread.sleep(10001l);
+        assertTrue(lock.isLive());
+        assertFalse(lockManager.expireLock("/test"));
+        lock.stopKeepAlive();
+        Thread.sleep(10001l);
+        assertTrue(lockManager.expireLock("/test"));
+        assertFalse(lock.isLive());
+    }
+
+    @Test
+    public void testLockKeepAliveReLocksDroppedLock() throws Exception {
+        final HippoLockManager lockManager = (HippoLockManager) session.getWorkspace().getLockManager();
+        final HippoLock lock = lockManager.lock("/test", false, false, 10l, null);
+        lock.startKeepAlive();
+        lockManager.unlock("/test");
+        Thread.sleep(3001l);
+        assertTrue(lockManager.isLocked("/test"));
+        lock.stopKeepAlive();
     }
 }

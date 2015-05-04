@@ -118,6 +118,8 @@
 [hippo:lockable] mixin
 - hippo:lockExpirationTime (date)
 
+[hippo:lock] > nt:base, mix:lockable, hippo:lockable
+
 // BOOTSTRAP
 
 [hippo:initializeitem] > nt:base
@@ -143,6 +145,7 @@
 - hippo:version (string) multiple // never specify this item at this time
 - hippo:sequence (double) // not yet supported
 + * (hippo:initializeitem) = hippo:initializeitem
++ hippo:lock (hippo:lock) = hippo:lock
 
 [hippo:deleted] > hippo:document, mix:versionable
 - hippo:deletedDate (date)

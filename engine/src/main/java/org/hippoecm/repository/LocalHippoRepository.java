@@ -302,9 +302,9 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
         jackrabbitRepository = new LocalRepositoryImpl(repConfig);
 
         repository = new DecoratorFactoryImpl().getRepositoryDecorator(jackrabbitRepository);
-        boolean locked = false;
-        Session bootstrapSession = null;
+        Session bootstrapSession = null, lockSession = null;
         final InitializationProcessorImpl initializationProcessor = new InitializationProcessorImpl();
+        boolean locked = false;
 
         try {
             final Session rootSession =  jackrabbitRepository.getRootSession(null);
@@ -330,6 +330,7 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             if (!initializedBefore || isContentBootstrapEnabled()) {
                 final SimpleCredentials credentials = new SimpleCredentials("system", new char[]{});
                 bootstrapSession = DecoratorFactoryImpl.getSessionDecorator(rootSession.impersonate(credentials), credentials);
+                lockSession = DecoratorFactoryImpl.getSessionDecorator(rootSession.impersonate(credentials), credentials);
                 initializeSystemNodeTypes(initializationProcessor, bootstrapSession, jackrabbitRepository.getFileSystem());
                 if (!bootstrapSession.getRootNode().hasNode("hippo:configuration")) {
                     log.info("Initializing configuration content");
@@ -343,7 +344,8 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
                 } else {
                     log.info("Initial configuration content already present");
                 }
-                locked = initializationProcessor.lock(bootstrapSession);
+                initializationProcessor.lock(lockSession);
+                locked = true;
                 contentBootstrap(initializationProcessor, bootstrapSession);
             }
 
@@ -353,8 +355,11 @@ public class LocalHippoRepository extends HippoRepositoryImpl {
             moduleManager.start();
 
         } finally {
-            if (locked) {
-                initializationProcessor.unlock(bootstrapSession);
+            if (lockSession != null) {
+                if (locked) {
+                    initializationProcessor.unlock(lockSession);
+                }
+                lockSession.logout();
             }
             if (bootstrapSession != null) {
                 bootstrapSession.logout();

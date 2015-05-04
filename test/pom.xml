@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2007-2013 Hippo B.V. (http://www.onehippo.com)
+  Copyright 2007-2015 Hippo B.V. (http://www.onehippo.com)
  
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -180,6 +180,7 @@
             <exclude>**/integration/*.java</exclude>
             <exclude>**/UpdaterExecutorTest.java</exclude>
             <exclude>**/SchedulerTest.java</exclude>
+            <exclude>**/LockTest.java</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -224,6 +225,7 @@
                     <include>**/StampedeTest.java</include>
                     <include>**/UpdaterExecutorTest.java</include>
                     <include>**/SchedulerTest.java</include>
+                    <include>**/LockTest.java</include>
                   </includes>
                 </configuration>
               </execution>

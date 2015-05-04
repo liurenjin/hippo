@@ -17,6 +17,7 @@ package org.hippoecm.repository.jackrabbit;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -64,4 +65,5 @@ public interface InternalHippoSession extends JackrabbitSession, NamespaceResolv
 
     void localRefresh();
 
+    ScheduledExecutorService getExecutor();
 }

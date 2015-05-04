@@ -22,6 +22,7 @@ import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.InvalidSerializedDataException;
@@ -271,6 +272,11 @@ public class SessionImpl extends org.apache.jackrabbit.core.SessionImpl implemen
     @Override
     public void localRefresh() {
         getItemStateManager().disposeAllTransientItemStates();
+    }
+
+    @Override
+    public ScheduledExecutorService getExecutor() {
+        return context.getRepositoryContext().getExecutor();
     }
 
     @Override

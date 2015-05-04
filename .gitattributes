@@ -222,7 +222,6 @@ engine/src/test/java/org/hippoecm/repository/DereferencedExportImportTest.java s
 engine/src/test/java/org/hippoecm/repository/DocumentViewExportTest.java -text
 engine/src/test/java/org/hippoecm/repository/ExportCndTest.java svneol=native#text/plain
 engine/src/test/java/org/hippoecm/repository/FreeTextSearchTest.java svneol=native#text/plain
-engine/src/test/java/org/hippoecm/repository/LockTest.java -text
 engine/src/test/java/org/hippoecm/repository/OrderByNodeNameTest.java svneol=native#text/plain
 engine/src/test/java/org/hippoecm/repository/PdfExtractedTextWithLineBreaksAreIndexedCorrectlyTest.java svneol=native#text/plain
 engine/src/test/java/org/hippoecm/repository/PdfExtractionAndIndexingTest.java svneol=native#text/plain
@@ -362,6 +361,7 @@ test/src/test/java/org/hippoecm/repository/test/TraversePerfTest.java -text
 test/src/test/java/org/hippoecm/repository/test/TraversePerfTestCase.java -text
 test/src/test/java/org/hippoecm/repository/util/JcrUtilsTest.java -text
 test/src/test/java/org/onehippo/repository/LocalRefreshTest.java -text
+test/src/test/java/org/onehippo/repository/LockTest.java -text
 test/src/test/java/org/onehippo/repository/search/SearchTransactionalityTest.java -text
 test/src/test/java/org/onehippo/repository/search/ServicingNodeIndexerSimilarityTest.java -text
 test/src/test/java/org/onehippo/repository/search/ServicingNodeIndexerTest.java -text

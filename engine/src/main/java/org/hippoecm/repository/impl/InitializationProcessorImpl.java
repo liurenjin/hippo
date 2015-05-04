@@ -81,6 +81,8 @@ import org.hippoecm.repository.util.JcrUtils;
 import org.hippoecm.repository.util.MavenComparableVersion;
 import org.hippoecm.repository.util.NodeIterable;
 import org.onehippo.repository.api.ContentResourceLoader;
+import org.onehippo.repository.locking.HippoLock;
+import org.onehippo.repository.locking.HippoLockManager;
 import org.onehippo.repository.util.FileContentResourceLoader;
 import org.onehippo.repository.util.ZipFileContentResourceLoader;
 import org.slf4j.Logger;
@@ -90,6 +92,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import static org.hippoecm.repository.api.HippoNodeType.HIPPO_ERRORMESSAGE;
+import static org.hippoecm.repository.api.HippoNodeType.HIPPO_LOCK;
 import static org.hippoecm.repository.api.HippoNodeType.HIPPO_SEQUENCE;
 import static org.hippoecm.repository.api.HippoNodeType.HIPPO_STATUS;
 import static org.hippoecm.repository.util.RepoUtils.getClusterNodeId;
@@ -101,7 +104,9 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     private static final Logger log = LoggerFactory.getLogger(InitializationProcessorImpl.class);
 
     private static final String INIT_PATH = "/" + HippoNodeType.CONFIGURATION_PATH + "/" + HippoNodeType.INITIALIZE_PATH;
-    private static final long LOCK_ATTEMPT_INTERVAL = 1000 * 2;
+    private static final String INIT_LOCK_PATH = INIT_PATH + "/" + HIPPO_LOCK;
+    private static final long LOCK_ATTEMPT_INTERVAL = 1000 * 5;
+    private static final long LOCK_TIMEOUT = Long.getLong("repo.bootstrap.lock.timeout", 30);
 
     private static final String SYSTEM_RELOAD_PROPERTY = "repo.bootstrap.reload-on-startup";
     private static final String ERROR_MESSAGE_RELOAD_DISABLED = "Reload requested but not enabled";
@@ -132,7 +137,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             HippoNodeType.HIPPO_TIMESTAMP + " IS NULL OR " +
             HippoNodeType.HIPPO_TIMESTAMP + " < {})";
 
-    private static final Double NO_HIPPO_SEQUENCE = new Double(-1.0);
+    private static final Double NO_HIPPO_SEQUENCE = -1.0;
 
     private static final Comparator<Node> initializeItemComparator = new Comparator<Node>() {
 
@@ -156,6 +161,8 @@ public class InitializationProcessorImpl implements InitializationProcessor {
     public static String currentInitializeItemName;
 
     private Logger logger;
+
+    private HippoLock lock;
 
     public InitializationProcessorImpl() {}
 
@@ -225,12 +232,17 @@ public class InitializationProcessorImpl implements InitializationProcessor {
 
     @Override
     public boolean lock(final Session session) throws RepositoryException {
-        ensureIsLockable(session, INIT_PATH);
-        final LockManager lockManager = session.getWorkspace().getLockManager();
+        ensureIsLockable(session);
+        final HippoLockManager lockManager = (HippoLockManager) session.getWorkspace().getLockManager();
         while (true) {
             log.debug("Attempting to obtain lock");
             try {
-                lockManager.lock(INIT_PATH, false, false, Long.MAX_VALUE, getClusterNodeId(session));
+                lock = lockManager.lock(INIT_LOCK_PATH, false, false, LOCK_TIMEOUT, getClusterNodeId(session));
+                try {
+                    lock.startKeepAlive();
+                } catch (LockException e) {
+                    throw new RepositoryException(e);
+                }
                 log.debug("Lock successfully obtained");
                 return true;
             } catch (LockException e) {
@@ -248,7 +260,10 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         final LockManager lockManager = session.getWorkspace().getLockManager();
         try {
             log.debug("Attempting to release lock");
-            lockManager.unlock(INIT_PATH);
+            if (lock != null) {
+                lock.stopKeepAlive();
+            }
+            lockManager.unlock(INIT_LOCK_PATH);
             log.debug("Lock successfully released");
         } catch (LockException e) {
             log.warn("Current session no longer holds a lock");
@@ -1111,10 +1126,9 @@ public class InitializationProcessorImpl implements InitializationProcessor {
         return log;
     }
 
-    private void ensureIsLockable(final Session session, final String absPath) throws RepositoryException {
-        final Node node = session.getNode(absPath);
-        if (!node.isNodeType(MIX_LOCKABLE)) {
-            node.addMixin(MIX_LOCKABLE);
+    private void ensureIsLockable(final Session session) throws RepositoryException {
+        if (!session.nodeExists(INIT_LOCK_PATH)) {
+            session.getNode(INIT_PATH).addNode(HIPPO_LOCK, HIPPO_LOCK);
             session.save();
         }
     }

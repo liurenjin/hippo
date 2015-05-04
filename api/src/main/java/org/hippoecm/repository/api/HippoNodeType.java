@@ -451,4 +451,6 @@ public interface HippoNodeType {
 
     public static final String HIPPO_LOCKEXPIRATIONTIME = "hippo:lockExpirationTime";
 
+    public static final String HIPPO_LOCK = "hippo:lock";
+
 }
