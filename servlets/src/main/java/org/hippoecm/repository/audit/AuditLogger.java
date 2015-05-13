@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2013 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2012-2015 Hippo B.V. (http://www.onehippo.com)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ public class AuditLogger {
     private static final String AUDIT_LOGGER = "org.onehippo.audit";
     private static final Logger log = LoggerFactory.getLogger(AUDIT_LOGGER);
 
+    public AuditLogger() {
+    }
+
     public static Logger getLogger() {
         return log;
     }
@@ -34,9 +37,19 @@ public class AuditLogger {
     @Subscribe
     public void logHippoEvent(HippoEvent event) {
         if (log.isInfoEnabled()) {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.putAll(event.getValues());
+            final JSONObject jsonObject = new JSONObject();
+            for (Object key : event.getValues().keySet()) {
+                final Object value = event.get((String) key);
+                jsonObject.put(key, getValue(value));
+            }
             AuditLogger.getLogger().info(jsonObject.toString());
         }
+    }
+
+    private Object getValue(final Object value) {
+        if (value instanceof Throwable) {
+            return value.toString();
+        }
+        return value;
     }
 }
