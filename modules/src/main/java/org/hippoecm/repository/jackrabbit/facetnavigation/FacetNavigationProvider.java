@@ -1,5 +1,5 @@
 /*
- *  Copyright 2010-2013 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2010-2015 Hippo B.V. (http://www.onehippo.com)
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -149,6 +149,11 @@ public class FacetNavigationProvider extends AbstractFacetNavigationProvider {
             }
             for(int i = 0; i < sortbys.length; i++) {
                 try {
+                    if (sortbys[i].equals("")) {
+                        log.warn("Skipping illegal name \"\" as sortby for facet node {}", nodeId);
+                        continue;
+                    }
+
                     Name propertyName = resolveName(NodeNameCodec.encode(sortbys[i]));
                     if(sortorders != null && "descending".equals(sortorders[i])) {
                         orderByList.add(new OrderBy(propertyName.toString(), true));
