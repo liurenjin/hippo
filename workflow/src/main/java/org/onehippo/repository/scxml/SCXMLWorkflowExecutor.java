@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Hippo B.V. (http://www.onehippo.com)
+ * Copyright 2013-2015 Hippo B.V. (http://www.onehippo.com)
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,11 @@ public class SCXMLWorkflowExecutor<T extends SCXMLWorkflowContext, V extends SCX
      */
     protected void handleException(Exception e) throws WorkflowException {
         if (e instanceof WorkflowException) {
-            log.error(e.getMessage(), e);
+            if (log.isDebugEnabled()) {
+                log.warn(e.getMessage(), e);
+            } else {
+                log.warn(e.getMessage());
+            }
             throw (WorkflowException)e;
         }
         else {
