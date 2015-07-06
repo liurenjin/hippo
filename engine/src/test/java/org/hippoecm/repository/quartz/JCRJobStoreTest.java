@@ -40,6 +40,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 import static org.hippoecm.repository.quartz.HippoSchedJcrConstants.HIPPOSCHED_JOBGROUP;
 import static org.hippoecm.repository.quartz.HippoSchedJcrConstants.HIPPOSCHED_NEXTFIRETIME;
 import static org.hippoecm.repository.quartz.HippoSchedJcrConstants.HIPPOSCHED_REPOSITORY_JOB;
@@ -168,6 +169,22 @@ public class JCRJobStoreTest extends RepositoryTestCase {
         assertTrue(jobNode.getNode("hipposched:triggers/trigger").isLocked());
         store.releaseAcquiredTrigger(triggers.get(0));
         assertFalse(jobNode.getNode("hipposched:triggers/trigger").isLocked());
+    }
+
+    @Test
+    public void testTriggerLockKeepAliveIsCancelledWhenRefreshingLockFails() throws Exception {
+        final Node jobNode = createAndStoreJobAndSimpleTrigger(store);
+        final List<OperableTrigger> triggers = store.acquireNextTriggers(System.currentTimeMillis(), 1, -1l);
+        final Node triggerNode = jobNode.getNode("hipposched:triggers/trigger");
+        triggerNode.unlock();
+        Thread.sleep(1000*12); // sleep longer than twice the refresh interval
+        for (int i = 0; i < 10; i++) {
+            if (!store.getLockKeepAlives().containsKey(triggerNode.getIdentifier())) {
+                return;
+            }
+            Thread.sleep(1000l);
+        }
+        fail("Keep alive was not cancelled");
     }
 
     @Test
