@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2013 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2012-2015 Hippo B.V. (http://www.onehippo.com)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public class CachingMultiReaderQueryFilter extends Filter {
     @Override
     public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
         if (reader instanceof MultiIndexReader) {
+            long start = System.currentTimeMillis();
             MultiIndexReader multiIndexReader = (MultiIndexReader) reader;
 
             IndexReader[] indexReaders = multiIndexReader.getIndexReaders();
@@ -62,7 +63,8 @@ public class CachingMultiReaderQueryFilter extends Filter {
                 docIdSets[i] = getIndexReaderDocIdSet(subReader, subReader);
                 maxDocs[i] = subReader.maxDoc();
             }
-
+            long end = System.currentTimeMillis();
+            log.debug("creating/updating/getting multi reader query filter took {} ms", end-start);
             return new MultiDocIdSet(docIdSets, maxDocs);
         }
         log.warn("MultiIndexReader was expected but not found. Do not dissect the reader but use it as one instead");
@@ -87,10 +89,11 @@ public class CachingMultiReaderQueryFilter extends Filter {
                 cache.remove(cacheKey);
             }
         }
-        // no synchronization needed: worst case scenario two concurrent thread do it both
-        OpenBitSet docIdSet = createDocIdSet(reader);
-        cache.put(cacheKey, new ValidityBitSet(reader.numDocs(), docIdSet));
-        return docIdSet;
+        synchronized (this) {
+            OpenBitSet docIdSet = createDocIdSet(reader);
+            cache.put(cacheKey, new ValidityBitSet(reader.numDocs(), docIdSet));
+            return docIdSet;
+        }
     }
 
     private OpenBitSet createDocIdSet(IndexReader reader) throws IOException {
