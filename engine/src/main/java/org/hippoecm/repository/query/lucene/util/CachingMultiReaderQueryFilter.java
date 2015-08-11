@@ -73,7 +73,23 @@ public class CachingMultiReaderQueryFilter extends Filter {
     }
 
     private DocIdSet getIndexReaderDocIdSet(final IndexReader reader, IndexReader cacheKey) throws IOException {
+        DocIdSet docIdSet = getFromCache(reader, cacheKey);
+        if (docIdSet != null) {
+            return docIdSet;
+        }
+        synchronized (this) {
+            // try again after obtaining the lock
+            docIdSet = getFromCache(reader, cacheKey);
+            if (docIdSet != null) {
+                return docIdSet;
+            }
+            docIdSet = createDocIdSet(reader);
+            cache.put(cacheKey, new ValidityBitSet(reader.numDocs(), docIdSet));
+            return docIdSet;
+        }
+    }
 
+    private DocIdSet getFromCache(final IndexReader reader, final IndexReader cacheKey) {
         ValidityBitSet validityBitSet = cache.get(cacheKey);
         if (validityBitSet != null) {
             // unfortunately, Jackrabbit can return a ReadOnlyIndexReader which is the same instance as used previously,
@@ -89,11 +105,7 @@ public class CachingMultiReaderQueryFilter extends Filter {
                 cache.remove(cacheKey);
             }
         }
-        synchronized (this) {
-            OpenBitSet docIdSet = createDocIdSet(reader);
-            cache.put(cacheKey, new ValidityBitSet(reader.numDocs(), docIdSet));
-            return docIdSet;
-        }
+        return null;
     }
 
     private OpenBitSet createDocIdSet(IndexReader reader) throws IOException {
@@ -114,8 +126,8 @@ public class CachingMultiReaderQueryFilter extends Filter {
 
     private class ValidityBitSet {
         private int numDocs;
-        private OpenBitSet bitSet;
-        private ValidityBitSet(int numDocs, OpenBitSet bitSet) {
+        private DocIdSet bitSet;
+        private ValidityBitSet(int numDocs, DocIdSet bitSet) {
             this.numDocs = numDocs;
             this.bitSet = bitSet;
         }
