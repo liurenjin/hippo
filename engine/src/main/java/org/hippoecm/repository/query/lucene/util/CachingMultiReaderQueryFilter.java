@@ -52,7 +52,6 @@ public class CachingMultiReaderQueryFilter extends Filter {
     @Override
     public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
         if (reader instanceof MultiIndexReader) {
-            long start = System.currentTimeMillis();
             MultiIndexReader multiIndexReader = (MultiIndexReader) reader;
 
             IndexReader[] indexReaders = multiIndexReader.getIndexReaders();
@@ -63,8 +62,6 @@ public class CachingMultiReaderQueryFilter extends Filter {
                 docIdSets[i] = getIndexReaderDocIdSet(subReader, subReader);
                 maxDocs[i] = subReader.maxDoc();
             }
-            long end = System.currentTimeMillis();
-            log.debug("creating/updating/getting multi reader query filter took {} ms", end-start);
             return new MultiDocIdSet(docIdSets, maxDocs);
         }
         log.warn("MultiIndexReader was expected but not found. Do not dissect the reader but use it as one instead");
