@@ -69,7 +69,6 @@ import org.apache.jackrabbit.core.nodetype.NodeTypeManagerImpl;
 import org.apache.jackrabbit.core.nodetype.NodeTypeRegistry;
 import org.apache.jackrabbit.spi.QNodeTypeDefinition;
 import org.apache.jackrabbit.spi.commons.namespace.NamespaceMapping;
-import org.apache.jackrabbit.spi.commons.nodetype.QDefinitionBuilderFactory;
 import org.hippoecm.repository.LocalHippoRepository;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.api.HippoSession;
@@ -96,7 +95,6 @@ import static org.hippoecm.repository.api.HippoNodeType.HIPPO_LOCK;
 import static org.hippoecm.repository.api.HippoNodeType.HIPPO_SEQUENCE;
 import static org.hippoecm.repository.api.HippoNodeType.HIPPO_STATUS;
 import static org.hippoecm.repository.util.RepoUtils.getClusterNodeId;
-import static org.onehippo.repository.util.JcrConstants.MIX_LOCKABLE;
 
 public class InitializationProcessorImpl implements InitializationProcessor {
 
@@ -263,10 +261,14 @@ public class InitializationProcessorImpl implements InitializationProcessor {
             if (lock != null) {
                 lock.stopKeepAlive();
             }
+            session.refresh(false);
             lockManager.unlock(INIT_LOCK_PATH);
             log.debug("Lock successfully released");
         } catch (LockException e) {
             log.warn("Current session no longer holds a lock");
+        } catch (RepositoryException e) {
+            log.error("Failed to unlock initialization processor: {}. " +
+                    "Lock will time out within {} seconds", e.toString(), LOCK_TIMEOUT);
         }
     }
 
