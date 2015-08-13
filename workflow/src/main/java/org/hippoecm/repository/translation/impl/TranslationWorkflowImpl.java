@@ -176,12 +176,12 @@ public class TranslationWorkflowImpl implements TranslationWorkflow, InternalWor
     public Map<String, Serializable> hints() throws WorkflowException, RemoteException, RepositoryException {
         Map<String, Serializable> hints = new TreeMap<String, Serializable>();
 
-        if (rootSubject.isNodeType(HippoStdNodeType.NT_PUBLISHABLE)) {
-            String state = rootSubject.getProperty(HippoStdNodeType.HIPPOSTD_STATE).getString();
+        if (userSubject.isNodeType(HippoStdNodeType.NT_PUBLISHABLE)) {
+            String state = userSubject.getProperty(HippoStdNodeType.HIPPOSTD_STATE).getString();
             if ("draft".equals(state)) {
                 hints.put("addTranslation", Boolean.FALSE);
             } else {
-                NodeIterator siblings = rootSubject.getParent().getNodes(rootSubject.getName());
+                NodeIterator siblings = userSubject.getParent().getNodes(userSubject.getName());
                 Node unpublished = null;
                 Node published = null;
                 while (siblings.hasNext()) {
@@ -203,7 +203,7 @@ public class TranslationWorkflowImpl implements TranslationWorkflow, InternalWor
             }
         }
 
-        HippoTranslatedNode translatedNode = new HippoTranslatedNode(rootSubject);
+        HippoTranslatedNode translatedNode = new HippoTranslatedNode(userSubject);
         Set<String> translations;
         try {
             translations = translatedNode.getTranslations();
@@ -214,7 +214,7 @@ public class TranslationWorkflowImpl implements TranslationWorkflow, InternalWor
         hints.put("locales", (Serializable) translations);
 
         Set<String> available = new TreeSet<String>();
-        // for all the available translations we pick the highest ancestor of rootSubject of type HippoTranslationNodeType.NT_TRANSLATED,
+        // for all the available translations we pick the highest ancestor of userSubject of type HippoTranslationNodeType.NT_TRANSLATED,
         // and take all the translations for that node
         Node highestTranslatedNode = translatedNode.getFarthestTranslatedAncestor();
         if (highestTranslatedNode != null) {
