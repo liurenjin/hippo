@@ -1,5 +1,5 @@
 /*
- *  Copyright 2010-2013 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2010-2015 Hippo B.V. (http://www.onehippo.com)
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,8 +41,6 @@ import org.hippoecm.repository.translation.HippoTranslatedNode;
 import org.hippoecm.repository.translation.HippoTranslationNodeType;
 import org.hippoecm.repository.translation.TranslationWorkflow;
 import org.hippoecm.repository.util.JcrUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TranslationWorkflowImpl implements TranslationWorkflow, InternalWorkflow {
 
@@ -67,12 +65,12 @@ public class TranslationWorkflowImpl implements TranslationWorkflow, InternalWor
         }
     }
 
-    public Document addTranslation(String language, String name) throws WorkflowException, MappingException,
+    public Document addTranslation(String language, String name) throws WorkflowException,
             RepositoryException, RemoteException {
         HippoTranslatedNode translatedNode = new HippoTranslatedNode(rootSubject);
 
         Node lclContainingFolder = translatedNode.getContainingFolder();
-        if (!lclContainingFolder.isNodeType(HippoTranslationNodeType.NT_TRANSLATED)) {
+        if (lclContainingFolder == null || !lclContainingFolder.isNodeType(HippoTranslationNodeType.NT_TRANSLATED)) {
             throw new WorkflowException("No translated ancestor found");
         }
 
