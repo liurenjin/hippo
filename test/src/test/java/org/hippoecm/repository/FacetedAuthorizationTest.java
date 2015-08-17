@@ -16,10 +16,7 @@
 package org.hippoecm.repository;
 
 import java.security.AccessControlException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.Node;
@@ -29,9 +26,6 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
-import javax.jcr.nodetype.NodeDefinitionTemplate;
-import javax.jcr.nodetype.NodeTypeManager;
-import javax.jcr.nodetype.NodeTypeTemplate;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.RowIterator;
@@ -41,8 +35,6 @@ import org.hippoecm.repository.api.HippoNode;
 import org.hippoecm.repository.api.HippoNodeIterator;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.api.HippoSession;
-import org.hippoecm.repository.api.StringCodec;
-import org.hippoecm.repository.query.lucene.util.CachingMultiReaderQueryFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -141,7 +133,7 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
 
         cleanup();
         Node config = session.getRootNode().getNode(HippoNodeType.CONFIGURATION_PATH);
-        Node domains = config.getNode(HippoNodeType.DOMAINS_PATH);/**/
+        Node domains = config.getNode(HippoNodeType.DOMAINS_PATH);
         Node users = config.getNode(HippoNodeType.USERS_PATH);
         Node groups = config.getNode(HippoNodeType.GROUPS_PATH);
 
@@ -309,12 +301,12 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
         assertTrue(testData.hasNode("expanders/usertest"));
         assertTrue(testData.hasNode("expanders/grouptest"));
         assertTrue(testData.hasNode("expanders/roletest"));
-        userSession.checkPermission(testData.getPath() + "/" + "readdoc0", READ_ACTION);
-        userSession.checkPermission(testData.getPath() + "/" + "writedoc0", READ_ACTION);
-        userSession.checkPermission(testData.getPath() + "/" + "expanders", READ_ACTION);
-        userSession.checkPermission(testData.getPath() + "/" + "expanders/usertest", READ_ACTION);
-        userSession.checkPermission(testData.getPath() + "/" + "expanders/grouptest", READ_ACTION);
-        userSession.checkPermission(testData.getPath() + "/" + "expanders/roletest", READ_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "readdoc0" ,  READ_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "writedoc0" , READ_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "expanders" , READ_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "expanders/usertest" ,  READ_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "expanders/grouptest" , READ_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "expanders/roletest" ,  READ_ACTION);
     }
 
     @Test
@@ -649,12 +641,12 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
     public void testWritesAllowed() throws RepositoryException {
         Node node;
         Node testData = userSession.getRootNode().getNode(TEST_DATA_NODE);
-        userSession.checkPermission(testData.getPath() + "/" + "writedoc0", SET_PROPERTY_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "writedoc0" , SET_PROPERTY_ACTION);
         node = testData.getNode("writedoc0");
         node.setProperty("test", "allowed");
         userSession.save();
 
-        userSession.checkPermission(testData.getPath() + "/" + "writedoc0", ADD_NODE_ACTION);
+        userSession.checkPermission(testData.getPath() + "/" + "writedoc0" , ADD_NODE_ACTION);
         node = testData.getNode("writedoc0");
         node.addNode("newnode", "hippo:authtestdocument").setProperty("authtest", "canwrite");
         userSession.save();
@@ -950,201 +942,6 @@ public class FacetedAuthorizationTest extends RepositoryTestCase {
         NodeIterator iter = query.execute().getNodes();
         assertEquals(13L, iter.getSize());
         assertEquals(13L, ((HippoNodeIterator) iter).getTotalSize());
-    }
-
-//    @Test
-    public void testAuthorizationComplexity() throws Exception {
-        System.out.println("Creating nodes");
-        createNodes(session.getRootNode().addNode("test"), 100, 3);
-        System.out.println("Starting test");
-        for (Integer i : new Integer[]{ 10, 20, 30, 40, 50, 60, 70 }) {
-            System.out.println("domain complexity: " + i);
-            createTestDomain(i);
-            testQueryFilterCachingStrategy();
-            removeNode("/hippo:configuration/hippo:domains/authtestdomain");
-            session.save();
-        }
-    }
-
-    private void createTestDomain(final Integer n) throws Exception {
-        Node domains = session.getNode("/hippo:configuration/hippo:domains");
-        final Node dummyDomain = domains.addNode("authtestdomain", HippoNodeType.NT_DOMAIN);
-        Node ar = dummyDomain.addNode("hippo:authrole", HippoNodeType.NT_AUTHROLE);
-        ar.setProperty(HippoNodeType.HIPPO_ROLE, "readonly");
-        ar.setProperty(HippoNodeType.HIPPO_USERS, new String[]{TEST_USER_ID});
-        Node dr = dummyDomain.addNode("hippo:domainrule", HippoNodeType.NT_DOMAINRULE);
-        for (int i = 0; i < n; i++) {
-            Node fr = dr.addNode("hippo:facetrule", HippoNodeType.NT_FACETRULE);
-            fr.setProperty(HippoNodeType.HIPPO_FACET, "nodetype");
-            NodeTypeManager nodeTypeManager = session.getWorkspace().getNodeTypeManager();
-            if (!nodeTypeManager.hasNodeType("hippo:testdocument" + i)) {
-                NodeTypeTemplate nodeType = nodeTypeManager.createNodeTypeTemplate();
-                nodeType.setName("hippo:testdocument" + i);
-                nodeTypeManager.registerNodeType(nodeType, false);
-            }
-            fr.setProperty(HippoNodeType.HIPPOSYS_VALUE, "hippo:testdocument" + i);
-            fr.setProperty(HippoNodeType.HIPPOSYS_TYPE, "Name");
-        }
-        session.save();
-    }
-
-    //    @Test
-    public void testAuthorizationQueryPerformance() throws Exception {
-        for (Integer i : new Integer[]{ 10, 20, 30, 40, 50, 60, 70 }) {
-            createNodes(session.getRootNode().addNode("test"), i, 3);
-            System.out.println(Math.pow(i, 3) + " nodes");
-            testQueryFilterCachingStrategy();
-            removeNode("/test");
-        }
-
-    }
-
-//    @Test
-    public void testQueryFilterCachingStrategy() throws Exception {
-        final Collection<SearchThread> searchThreads = createSearchThreads();
-        for (SearchThread searchThread : searchThreads) {
-            searchThread.start();
-        }
-        AuthFilterInvalidationThread modificationThread = new AuthFilterInvalidationThread(session);
-        modificationThread.start();
-        for (SearchThread searchThread : searchThreads) {
-            searchThread.join();
-        }
-        modificationThread.shutdown();
-        long max = 0;
-        long total = 0;
-        long n = 0;
-        for (SearchThread searchThread : searchThreads) {
-            searchThread.shutdown();
-            if (searchThread.max > max) {
-                max = searchThread.max;
-            }
-            n++;
-            total += searchThread.average;
-        }
-        System.out.println("search max: " + max);
-        System.out.println("search average: " + total / n);
-    }
-
-    private int counter = 0;
-    private void createNodes(Node node, int width, int depth) throws RepositoryException {
-        if (depth == 0) {
-            return;
-        }
-        for (int i = 0; i < width; i++) {
-            Node child = node.addNode(String.valueOf(i));
-            counter++;
-            for (int j = 0; j < 10; j++) {
-                child.setProperty(String.valueOf(j), String.valueOf(j));
-            }
-            createNodes(child, width, depth-1);
-        }
-        System.out.println("created " + counter + " nodes");
-        node.getSession().save();
-    }
-
-    private Collection<SearchThread> createSearchThreads() throws RepositoryException {
-        final List<SearchThread> result = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
-            Session session = server.login(TEST_USER_ID, TEST_USER_PASS.toCharArray());
-            result.add(new SearchThread(session));
-        }
-        return result;
-    }
-
-    private static void search(Session session) throws RepositoryException {
-        final QueryManager queryManager = session.getWorkspace().getQueryManager();
-        final Query query = queryManager.createQuery("//element(*,hippo:authtestdocument) order by @jcr:score", Query.XPATH);
-        query.execute().getNodes();
-    }
-
-    private static void invalidateAuthFilter(Session session) throws RepositoryException {
-        final Node domains = session.getNode("/hippo:configuration/hippo:domains");
-        final Node dummyDomain = domains.addNode("dummydomain", HippoNodeType.NT_DOMAIN);
-        Node ar = dummyDomain.addNode("hippo:authrole", HippoNodeType.NT_AUTHROLE);
-        ar.setProperty(HippoNodeType.HIPPO_ROLE, "readonly");
-        ar.setProperty(HippoNodeType.HIPPO_USERS, new String[]{TEST_USER_ID});
-        Node dr = dummyDomain.addNode("hippo:domainrule", HippoNodeType.NT_DOMAINRULE);
-        Node fr = dr.addNode("hippo:facetrule", HippoNodeType.NT_FACETRULE);
-        fr.setProperty(HippoNodeType.HIPPO_FACET, "nodetype");
-        fr.setProperty(HippoNodeType.HIPPOSYS_VALUE, "hippo:testdocument");
-        fr.setProperty(HippoNodeType.HIPPOSYS_TYPE, "Name");
-        session.save();
-        Session testSession = session.impersonate(new SimpleCredentials(TEST_USER_ID, TEST_USER_PASS.toCharArray()));
-        QueryManager queryManager = testSession.getWorkspace().getQueryManager();
-        Query query = queryManager.createQuery("//element(*,hippo:authtestdocument) order by @jcr:score", Query.XPATH);
-        query.execute().getNodes();
-        testSession.logout();
-        dummyDomain.remove();
-        session.save();
-    }
-
-    private static class SearchThread extends Thread {
-        private final Session session;
-        private long max = 0;
-        private long total = 0;
-        private long average = 0;
-        private SearchThread(final Session session) {
-            this.session = session;
-        }
-
-        @Override
-        public void run() {
-            int n = 100;
-            for (int i = 0; i < n; i++) {
-                try {
-                    long start = System.currentTimeMillis();
-                    search(session);
-                    long time = System.currentTimeMillis() - start;
-                    if (time > max) {
-                        max = time;
-                    }
-                    total += time;
-                } catch (RepositoryException e) {
-                    System.out.println(e);
-                }
-            }
-            average = total / n;
-        }
-
-        private void shutdown() {
-            session.logout();
-        }
-    }
-
-    private static class AuthFilterInvalidationThread extends Thread {
-        private final Session session;
-        private boolean run = true;
-
-        private AuthFilterInvalidationThread(final Session session) {
-            this.session = session;
-        }
-
-        @Override
-        public void run() {
-            while (run) {
-                try {
-//                    invalidateAuthFilter(session);
-                    Node dummy = session.getNode("/test").addNode("dummy");
-                    for (int i = 0; i < 10; i++) {
-                        dummy.setProperty(String.valueOf(i), String.valueOf(i));
-                    }
-                    session.save();
-                } catch (RepositoryException e) {
-                    System.out.println(e);
-                }
-            }
-        }
-
-        private void shutdown() throws InterruptedException {
-            run = false;
-            join();
-        }
-
-        @Override
-        public String toString() {
-            return "AuthFilterInvalidation";
-        }
     }
 
     @Test
