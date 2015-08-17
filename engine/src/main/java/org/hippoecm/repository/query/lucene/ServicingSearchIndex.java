@@ -163,22 +163,25 @@ public class ServicingSearchIndex extends SearchIndex implements HippoQueryHandl
         }
 
         String userId = session.getUserID();
-        CachingMultiReaderQueryFilter filter = cache.getIfPresent(userId);
         InternalHippoSession internalHippoSession = (InternalHippoSession) session;
         BooleanQuery query = internalHippoSession.getAuthorizationQuery().getQuery();
-        if (filter != null && !filter.getQuery().equals(query)) {
-            cache.invalidate(userId);
-            filter = null;
-        }
-        if (filter == null) {
-            // since this method can be invoked concurrently for the same userID it might be that we store
-            // the same filter twice or more: This only happens for the first unique userID or after a change in
-            // authorization. Any way, storing it needlessly twice or more only for the same userID under concurrency is
-            // much preferable over introducing synchronization
-            filter = new CachingMultiReaderQueryFilter(query);
-            cache.put(session.getUserID(), filter);
-        }
-        return filter;
+//        synchronized (userId.intern()) {
+            CachingMultiReaderQueryFilter filter = cache.getIfPresent(userId);
+            if (filter != null && !filter.getQuery().equals(query)) {
+                cache.invalidate(userId);
+                filter = null;
+            }
+            if (filter == null) {
+                // since this method can be invoked concurrently for the same userID it might be that we store
+                // the same filter twice or more: This only happens for the first unique userID or after a change in
+                // authorization. Any way, storing it needlessly twice or more only for the same userID under concurrency is
+                // much preferable over introducing synchronization
+
+                filter = new CachingMultiReaderQueryFilter(query);
+                cache.put(session.getUserID(), filter);
+            }
+            return filter;
+//        }
     }
 
     /**
