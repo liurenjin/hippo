@@ -91,6 +91,8 @@
     <easymock.version>3.2</easymock.version>
     <decentxml.version>1.4</decentxml.version>
     <commons-scxml2.version>2.0-M1</commons-scxml2.version>
+    <groovy.version>2.4.4</groovy.version>
+
   </properties>
 
   <scm>
