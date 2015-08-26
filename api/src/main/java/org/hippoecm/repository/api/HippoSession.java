@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import javax.jcr.Credentials;
 import javax.jcr.InvalidSerializedDataException;
 import javax.jcr.ItemExistsException;
 import javax.jcr.ItemNotFoundException;
@@ -46,6 +47,17 @@ import org.xml.sax.SAXException;
  * a HippoSession allowing access to the extensions to the JCR API.
  */
 public interface HippoSession extends Session {
+
+    /**
+     * By default a System Session when impersonating another user will always add the SystemPrincipal itself to the impersonated session.
+     * This has as 'side-effect' that it a System Session cannot be 'downgraded' to a normal user.
+     * This limitation or 'feature' will be removed in a next major release.
+     * Until then, the desired effect can be achieved by adding this attribute with any value (not null) on the SimpleCredentials
+     * parameter in a {@link Session#impersonate(Credentials)} call. If this attribute is defined, the SystemPrincipal will not be added
+     * to the impersonated session when using the System session to impersonate another session.
+     * @deprecated this attribute name and usage will be removed again when the limitation as described above has been fixed.
+     */
+    String NO_SYSTEM_IMPERSONATION = "org.hippoecm.repository.security.no-system-impersonation";
 
     /**
      * Convenience function to copy a node to a destination path in the same workspace.  Unlike the copy method in the javax.jcr.Workspace class,
@@ -109,7 +121,7 @@ public interface HippoSession extends Session {
      * will also return the root node if modified.
      *
      * @return A NodeIterator instance which iterates over all modified nodes, including the root
-     * @throws RepositoryException 
+     * @throws RepositoryException
      * @see #pendingChanges(Node,String,boolean)
      */
     public NodeIterator pendingChanges() throws RepositoryException;
@@ -157,7 +169,7 @@ public interface HippoSession extends Session {
      * @throws PathNotFoundException in case the parentAbsPath parameter does not point to a valid node
      * @throws ItemExistsException in case the to be imported node already exist below the parent and same-name siblings are not allowed, or when the merge behavior does not allow merging on an existing node and the node does exist
      * @throws ConstraintViolationException when imported node is marked protected accoring to the node definition of the parent
-     * @throws InvalidSerializedDataException 
+     * @throws InvalidSerializedDataException
      * @throws VersionException when the parent node is not in checked-out status
      * @throws LockException when the parent node is locked
      * @throws RepositoryException a generic error while accessing the repository
@@ -184,7 +196,7 @@ public interface HippoSession extends Session {
      * @throws PathNotFoundException in case the parentAbsPath parameter does not point to a valid node
      * @throws ItemExistsException in case the to be imported node already exist below the parent and same-name siblings are not allowed, or when the merge behavior does not allow merging on an existing node and the node does exist
      * @throws ConstraintViolationException when imported node is marked protected accoring to the node definition of the parent
-     * @throws InvalidSerializedDataException 
+     * @throws InvalidSerializedDataException
      * @throws VersionException when the parent node is not in checked-out status
      * @throws LockException when the parent node is locked
      * @throws RepositoryException a generic error while accessing the repository
