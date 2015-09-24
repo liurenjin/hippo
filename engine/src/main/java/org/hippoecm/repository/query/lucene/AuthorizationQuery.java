@@ -191,11 +191,14 @@ public class AuthorizationQuery {
                 Name facetName = facetRule.getFacetName();
                 try {
                     if (NameConstants.JCR_UUID.equals(facetName)) {
-                        final Query tq = new TermQuery(new Term(FieldNames.UUID, value));
                         // note no check required for isFacetOptional since every node has a uuid
                         if (facetRule.isEqual()) {
-                            return tq;
+                            // only allow one *single* node (not the descendants because those might not be readable)
+                            return new TermQuery(new Term(FieldNames.UUID, value));
                         } else {
+                            // disallow *all* descendant nodes below the node with UUID = value because our access mngr
+                            // is hierarchical: you cannot read nodes below a node you are not allowed to read
+                            final Query tq = new TermQuery(new Term(ServicingFieldNames.HIPPO_UUIDS, value));
                             return QueryHelper.negateQuery(tq);
                         }
                     }
