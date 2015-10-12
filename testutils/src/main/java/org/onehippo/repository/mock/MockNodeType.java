@@ -137,7 +137,7 @@ public class MockNodeType implements NodeType {
 
     @Override
     public boolean hasOrderableChildNodes() {
-        throw new UnsupportedOperationException();
+        return false;
     }
 
     @Override
