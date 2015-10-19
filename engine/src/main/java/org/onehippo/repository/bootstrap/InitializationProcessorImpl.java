@@ -16,9 +16,6 @@
 package org.onehippo.repository.bootstrap;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -135,10 +132,7 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                     } else {
                         log.warn("Failed to start lock keep-alive: " + e);
                     }
-                    logThreadDump();
                     throw new RepositoryException(e);
-                } catch (Exception e) {
-                    logThreadDump();
                 }
                 return true;
             } catch (LockException e) {
@@ -147,33 +141,9 @@ public class InitializationProcessorImpl implements InitializationProcessor {
                     Thread.sleep(LOCK_ATTEMPT_INTERVAL);
                 } catch (InterruptedException ignore) {
                 }
-            } catch (Exception e) {
-                logThreadDump();
             }
         }
     }
-
-    private void logThreadDump() {
-        final StringBuilder dump = new StringBuilder();
-        final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
-        for (ThreadInfo threadInfo : threadInfos) {
-            dump.append('"');
-            dump.append(threadInfo.getThreadName());
-            dump.append("\" ");
-            final Thread.State state = threadInfo.getThreadState();
-            dump.append("\n   java.lang.Thread.State: ");
-            dump.append(state);
-            final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
-            for (final StackTraceElement stackTraceElement : stackTraceElements) {
-                dump.append("\n        at ");
-                dump.append(stackTraceElement);
-            }
-            dump.append("\n\n");
-        }
-        log.error(dump.toString());
-    }
-
 
     @Override
     public void unlock(final Session session) throws RepositoryException {
