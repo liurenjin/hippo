@@ -81,11 +81,12 @@
     
     <!-- Project Dependencies -->
     <commons-io.version>1.4</commons-io.version>
+    <commons-collections.version>3.2.2</commons-collections.version>
     <org.datanucleus.version>2.2.2</org.datanucleus.version>
     <lucene.version>2.2.0</lucene.version>
     <tika.version>0.9</tika.version>
     <pdfbox.version>1.7.1</pdfbox.version>
-    <jackrabbit.patched.version>2.2.13-h14</jackrabbit.patched.version>
+    <jackrabbit.patched.version>2.2.13-h15</jackrabbit.patched.version>
     <jackrabbit.version>2.2.13</jackrabbit.version>
     <quartz.version>1.8.5</quartz.version>
     <json-lib.version>2.2.2</json-lib.version>
@@ -301,6 +302,11 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${commons-collections.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tika</groupId>
