@@ -95,9 +95,9 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:http://svn.onehippo.org/repos/hippo/hippo-cms7/repository/branches/hippo-repository-2.24.xx</connection>
-    <developerConnection>scm:svn:https://svn.onehippo.org/repos/hippo/hippo-cms7/repository/branches/hippo-repository-2.24.xx</developerConnection>
-    <url>http://svn.onehippo.org/repos/hippo/hippo-cms7/repository/branches/hippo-repository-2.24.xx</url>
+    <connection>scm:git:https://code.onehippo.org/cms-community/hippo-repository.git</connection>
+    <developerConnection>scm:git:git@code.onehippo.org:cms-community/hippo-repository.git</developerConnection>
+    <url>https://code.onehippo.org/cms-community/hippo-repository</url>
   </scm>
 
   <build>
