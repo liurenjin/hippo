@@ -20,14 +20,25 @@ import javax.jcr.version.VersionHistory;
 
 import org.hippoecm.repository.decorating.SessionDecorator;
 import org.hippoecm.repository.decorating.VersionHistoryDecorator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class VersionHistoryRemover {
+public final class VersionHistoryRemover {
 
-    public static void removeVersionHistory(VersionHistory versionHistory) throws RepositoryException {
-        final VersionHistoryImpl versionHistoryImpl = (VersionHistoryImpl) VersionHistoryDecorator.unwrap(versionHistory);
-        final InternalVersionHistoryImpl internalVersionHistory = (InternalVersionHistoryImpl) versionHistoryImpl.getInternalVersionHistory();
-        final InternalVersionManager versionManager = internalVersionHistory.getVersionManager();
-        versionManager.removeVersionHistory(SessionDecorator.unwrap(versionHistory.getSession()), internalVersionHistory);
+    private static final Logger log = LoggerFactory.getLogger(VersionHistoryRemover.class);
+
+    private VersionHistoryRemover() {
+    }
+
+    public static void removeVersionHistory(VersionHistory versionHistory) {
+        try {
+            final VersionHistoryImpl versionHistoryImpl = (VersionHistoryImpl) VersionHistoryDecorator.unwrap(versionHistory);
+            final InternalVersionHistoryImpl internalVersionHistory = (InternalVersionHistoryImpl) versionHistoryImpl.getInternalVersionHistory();
+            final InternalVersionManager versionManager = internalVersionHistory.getVersionManager();
+            versionManager.removeVersionHistory(SessionDecorator.unwrap(versionHistory.getSession()), internalVersionHistory);
+        } catch (RepositoryException e) {
+            log.warn("History item not removed", e);
+        }
     }
 
 }
