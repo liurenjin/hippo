@@ -171,7 +171,7 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
                 final Node published = getPublished(handle);
                 if (published != null) {
                     clear(newPreview);
-                    copy(published,  newPreview);
+                    copy(published, newPreview);
                     newPreview.setProperty(HIPPOSTD_STATE, UNPUBLISHED);
                 }
             }
@@ -328,7 +328,7 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
                     if (node.isNodeType("nt:versionedChild")) {
                         final String reference = node.getProperty("jcr:childVersionHistory").getString();
                         try {
-                            final VersionHistory documentHistory = (VersionHistory) defaultSession.getNodeByIdentifier(reference);
+                            final VersionHistory documentHistory = (VersionHistory)defaultSession.getNodeByIdentifier(reference);
                             VersionHistoryRemover.removeVersionHistory(documentHistory);
                         } catch (ItemNotFoundException ignore) {
                             // this can happen for items in the attic
@@ -356,9 +356,15 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
                 while (nodes.hasNext()) {
                     final Node node = nodes.nextNode();
                     if (node.isNodeType("nt:versionedChild")) {
-                        final String reference = node.getProperty("jcr:childVersionHistory").getString();
-                        final VersionHistory documentHistory = (VersionHistory)
-                                defaultSession.getNodeByIdentifier(reference);
+                        final Property property = node.getProperty("jcr:childVersionHistory");
+                        if (property == null) {
+                            continue;
+                        }
+                        final String reference = property.getString();
+                        final VersionHistory documentHistory = getNodeVersionHistory(reference);
+                        if (documentHistory == null) {
+                            continue;
+                        }
                         final VersionIterator allDocumentVersions = documentHistory.getAllVersions();
                         while (allDocumentVersions.hasNext()) {
                             final Version documentVersion = allDocumentVersions.nextVersion();
@@ -386,8 +392,17 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
         return versions;
     }
 
+    private VersionHistory getNodeVersionHistory(final String reference) throws RepositoryException {
+        try {
+            return (VersionHistory)defaultSession.getNodeByIdentifier(reference);
+        } catch (ItemNotFoundException ignore) {
+            // ignore
+        }
+        return null;
+    }
+
     private void createMigrationWorkspaceIfNotExists() throws RepositoryException {
-        RepositoryImpl repositoryImpl = (RepositoryImpl) RepositoryDecorator.unwrap(defaultSession.getRepository());
+        RepositoryImpl repositoryImpl = (RepositoryImpl)RepositoryDecorator.unwrap(defaultSession.getRepository());
         try {
             repositoryImpl.getRootSession(HANDLE_MIGRATION_WORKSPACE);
         } catch (NoSuchWorkspaceException e) {
@@ -397,7 +412,7 @@ public class HardHandleUpdateVisitor extends BaseContentUpdateVisitor {
     }
 
     private Session loginToMigrationWorkspace() throws RepositoryException {
-        RepositoryImpl repositoryImpl = (RepositoryImpl) RepositoryDecorator.unwrap(defaultSession.getRepository());
+        RepositoryImpl repositoryImpl = (RepositoryImpl)RepositoryDecorator.unwrap(defaultSession.getRepository());
         final SimpleCredentials credentials = new SimpleCredentials("system", new char[]{});
         return DecoratorFactoryImpl.getSessionDecorator(repositoryImpl.getRootSession(HANDLE_MIGRATION_WORKSPACE).impersonate(credentials), credentials);
     }
