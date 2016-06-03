@@ -44,7 +44,7 @@ ${response.setContentType("text/html;charset=UTF-8")}
         .logout { float: right; padding: 4px 10px 0 0;}
         .logout a { color: white; font-size: small;}
 
-        .query-input {width: 100%;}
+        .query-input {width: 100%;box-sizing: border-box;}
 
         .search-params {padding: 20px 0 10px 0;}
         .search-params input { margin-bottom: 4px}
