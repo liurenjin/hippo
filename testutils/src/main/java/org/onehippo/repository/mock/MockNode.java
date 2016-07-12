@@ -1,5 +1,5 @@
 /*
- *  Copyright 2012-2014 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2012-2016 Hippo B.V. (http://www.onehippo.com)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,7 +38,6 @@ import java.util.regex.Pattern;
 import javax.jcr.Binary;
 import javax.jcr.Item;
 import javax.jcr.ItemNotFoundException;
-import javax.jcr.NamespaceException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
@@ -47,17 +45,14 @@ import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-import javax.jcr.UnsupportedRepositoryOperationException;
 import javax.jcr.Value;
 import javax.jcr.lock.Lock;
 import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.NodeDefinition;
 import javax.jcr.nodetype.NodeType;
 import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
-import javax.jcr.version.VersionManager;
 
 import org.hippoecm.repository.api.HippoNode;
 import org.hippoecm.repository.api.Localized;
@@ -182,7 +177,7 @@ public class MockNode extends MockItem implements HippoNode {
         List<MockNode> childList = children.get(childName);
 
         if (childList == null) {
-            childList = new LinkedList<MockNode>();
+            childList = new LinkedList<>();
             childList.add(child);
             children.put(childName, childList);
         } else {
@@ -447,11 +442,15 @@ public class MockNode extends MockItem implements HippoNode {
 
     @Override
     public NodeIterator getNodes() {
-        List<MockNode> childrenCopy = new LinkedList<MockNode>();
+        List<MockNode> childrenCopy = new LinkedList<>();
         for (List<MockNode> childList : children.values()) {
             childrenCopy.addAll(childList);
         }
         return new MockNodeIterator(childrenCopy);
+    }
+
+    void setIdentifier(final String identifier) {
+        this.identifier = identifier;
     }
 
     @Override
@@ -594,7 +593,7 @@ public class MockNode extends MockItem implements HippoNode {
 
     @Override
     public NodeIterator getNodes(final String[] nameGlobs) {
-        Set<MockNode> childrenCopy = new LinkedHashSet<MockNode>();
+        Set<MockNode> childrenCopy = new LinkedHashSet<>();
 
         for (String nameGlob : nameGlobs) {
             PathMatcher globMatcher = FileSystems.getDefault().getPathMatcher("glob:" + nameGlob);
@@ -624,7 +623,7 @@ public class MockNode extends MockItem implements HippoNode {
 
     @Override
     public PropertyIterator getProperties(final String[] nameGlobs) {
-        Set<MockProperty> propsCopy = new LinkedHashSet<MockProperty>();
+        Set<MockProperty> propsCopy = new LinkedHashSet<>();
 
         for (String nameGlob : nameGlobs) {
             PathMatcher globMatcher = FileSystems.getDefault().getPathMatcher("glob:" + nameGlob);
@@ -649,7 +648,7 @@ public class MockNode extends MockItem implements HippoNode {
     @Override
     public int getIndex() throws RepositoryException {
         if (!isRootNode()) {
-            List<MockNode> childList = ((MockNode) getParent()).children.get(getName());
+            List<MockNode> childList = getParent().children.get(getName());
             if (childList != null) {
                 int offset = childList.indexOf(this);
                 if (offset != -1) {
@@ -666,13 +665,13 @@ public class MockNode extends MockItem implements HippoNode {
     }
 
     @Override
-    public MockNode getCanonicalNode() throws ItemNotFoundException, RepositoryException {
+    public MockNode getCanonicalNode() throws RepositoryException {
         return this;
     }
 
     @Override
     public boolean isVirtual() throws RepositoryException {
-        return false;
+        return getIdentifier().startsWith("cafeface-");
     }
 
     @Override
@@ -892,12 +891,12 @@ public class MockNode extends MockItem implements HippoNode {
     }
 
     @Override
-    public NodeIterator pendingChanges(final String nodeType, final boolean prune) throws NamespaceException, NoSuchNodeTypeException, RepositoryException {
+    public NodeIterator pendingChanges(final String nodeType, final boolean prune) throws RepositoryException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public NodeIterator pendingChanges(final String nodeType) throws NamespaceException, NoSuchNodeTypeException, RepositoryException {
+    public NodeIterator pendingChanges(final String nodeType) throws RepositoryException {
         throw new UnsupportedOperationException();
     }
 
