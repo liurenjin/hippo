@@ -26,7 +26,7 @@
   <name>Repository</name>
   <description>Hippo Repository</description>
   <artifactId>hippo-repository</artifactId>
-  <version>4.0.2-SNAPSHOT</version>
+  <version>4.0.2</version>
   <packaging>pom</packaging>
 
   <inceptionYear>2007</inceptionYear>
@@ -72,9 +72,9 @@
     <notice.project.name>Hippo Repository</notice.project.name>
 
     <hippo.commons.version>3.0.0</hippo.commons.version>
-    <hippo.services.version>3.0.0</hippo.services.version>
+    <hippo.services.version>3.0.1</hippo.services.version>
     <hippo.services.eventbus.version>3.0.0</hippo.services.eventbus.version>
-    <hippo.utilities.version>3.0.0</hippo.utilities.version>
+    <hippo.utilities.version>3.0.1</hippo.utilities.version>
     <hippo.jcrdiff.version>1.01.05</hippo.jcrdiff.version>
 
     <!-- Test dependencies  -->
