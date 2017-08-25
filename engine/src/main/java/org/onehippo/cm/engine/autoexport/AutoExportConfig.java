@@ -177,8 +177,6 @@ public class AutoExportConfig extends ExportConfig {
                 for (Value value : values) {
                     moduleStrings.add(value.getString());
                 }
-            } else {
-                addRepositoryPath("application", "/", modules, isEnabled());
             }
         } catch (RepositoryException e) {
             log.error("Failed to get modules configuration from repository", e);
@@ -215,16 +213,18 @@ public class AutoExportConfig extends ExportConfig {
                     }
                 } else {
                     if (logChanges) {
-                        log.error("Misconfiguration of " + CONFIG_MODULES_PROPERTY_NAME + " property: the same repository path may not be mapped to multiple modules");
+                        log.error("Misconfiguration of " + CONFIG_MODULES_PROPERTY_NAME + " property: the same repository path {} may not be mapped to multiple modules", repositoryPath);
                     }
                 }
             }
         }
         if (!rootRepositoryPathIsConfigured) {
             if (logChanges) {
-                log.warn("Misconfiguration of " + CONFIG_MODULES_PROPERTY_NAME + " property: there must be a module that maps to /");
+                log.error("Misconfiguration of " + CONFIG_MODULES_PROPERTY_NAME + " property: there must be a module that maps to /");
+
+                // in this condition, we should disable auto-export entirely
+                modules.clear();
             }
-            addRepositoryPath("application", "/", modules, logChanges);
         }
     }
 

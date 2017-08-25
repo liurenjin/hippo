@@ -156,8 +156,7 @@ public class ConfigurationServiceImpl implements InternalConfigurationService {
 
             // also, check params for auto-export state
             final boolean isProjectBaseDirSet = StringUtils.isNotBlank(System.getProperty(PROJECT_BASEDIR_PROPERTY));
-            final boolean autoExportAllowed = isProjectBaseDirSet && Boolean.getBoolean(SYSTEM_PROPERTY_AUTOEXPORT_ALLOWED);
-            boolean startAutoExportService = configure && autoExportAllowed;
+            boolean startAutoExportService = configure && isProjectBaseDirSet && Boolean.getBoolean(SYSTEM_PROPERTY_AUTOEXPORT_ALLOWED);
             ConfigurationModelImpl bootstrapModel = null;
             boolean success;
             if (mustConfigure) {
@@ -184,6 +183,11 @@ public class ConfigurationServiceImpl implements InternalConfigurationService {
                             }
                             startAutoExportService = false;
                         }
+                    }
+
+                    // if we're not going to start auto-export, notify devs via the log
+                    if (!startAutoExportService) {
+                        AutoExportServiceImpl.logDisabled();
                     }
 
                     log.info("Loading preMigrators");
@@ -214,7 +218,7 @@ public class ConfigurationServiceImpl implements InternalConfigurationService {
                         baselineModel = loadBaselineModel();
 
                         // if we're in a mode that allows auto-export, keep a copy of the baseline for future use
-                        if (autoExportAllowed) {
+                        if (startAutoExportService) {
                             this.baselineModel = baselineModel;
                         }
 
@@ -689,7 +693,7 @@ public class ConfigurationServiceImpl implements InternalConfigurationService {
             autoExportService = new AutoExportServiceImpl(session, this);
             return true;
         } catch (Exception e) {
-            log.error("Failed to start autoexport service");
+            log.error("ConfigurationService: Failed to start autoexport service");
             return false;
         }
     }
