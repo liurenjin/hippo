@@ -182,12 +182,12 @@ public class ConfigurationServiceImpl implements InternalConfigurationService {
                                 log.error(errorMsg, e);
                             }
                             startAutoExportService = false;
+                            log.error("autoexport service disallowed");
                         }
                     }
-
-                    // if we're not going to start auto-export, notify devs via the log
-                    if (!startAutoExportService) {
-                        AutoExportServiceImpl.logDisabled();
+                    else {
+                        // if starting auto-export was disallowed to begin with, notify devs via the log
+                        log.info("Running autoexport service not allowed (requires appropriate system parameters to be set first)");
                     }
 
                     log.info("Loading preMigrators");
@@ -691,7 +691,7 @@ public class ConfigurationServiceImpl implements InternalConfigurationService {
     private boolean startAutoExportService() {
         try {
             autoExportService = new AutoExportServiceImpl(session, this);
-            return true;
+            return autoExportService.isRunning();
         } catch (Exception e) {
             log.error("ConfigurationService: Failed to start autoexport service");
             return false;

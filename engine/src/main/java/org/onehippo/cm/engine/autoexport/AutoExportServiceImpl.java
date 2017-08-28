@@ -16,8 +16,7 @@
 package org.onehippo.cm.engine.autoexport;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -27,12 +26,9 @@ import javax.jcr.observation.EventIterator;
 import javax.jcr.observation.EventListener;
 import javax.jcr.observation.ObservationManager;
 
-import com.google.common.collect.Sets;
-
 import org.onehippo.cm.engine.ConfigurationServiceImpl;
 import org.onehippo.cm.model.impl.ConfigurationModelImpl;
 import org.onehippo.cm.model.impl.ModuleImpl;
-import org.onehippo.cm.model.impl.ProjectImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +51,7 @@ public final class AutoExportServiceImpl implements EventListener {
     private AutoExportConfig autoExportConfig;
     private boolean configIsValid;
     private EventJournalProcessor eventJournalProcessor;
+    private AtomicBoolean running = new AtomicBoolean(false);
 
 
     public AutoExportServiceImpl(final Session configurationSession, final ConfigurationServiceImpl configurationService)
@@ -74,16 +71,13 @@ public final class AutoExportServiceImpl implements EventListener {
             throw new IllegalStateException("autoexport config is invalid");
         }
 
-        if (autoExportConfig.isEnabled() && configIsValid) {
+        if (autoExportConfig.isEnabled()) {
             log.info("autoexport service enabled");
             eventJournalProcessor.start();
+            running.set(true);
         } else {
             log.info("autoexport service disabled");
         }
-    }
-
-    public static void logDisabled() {
-        log.info("autoexport service disabled (not allowed due to system params or error loading modules)");
     }
 
     /**
@@ -124,8 +118,10 @@ public final class AutoExportServiceImpl implements EventListener {
                             if (autoExportConfig.isEnabled()) {
                                 log.info("autoexport service enabled");
                                 eventJournalProcessor.start();
+                                running.set(true);
                             } else {
                                 log.info("autoexport service disabled, processing remaining changes");
+                                running.set(false);
                                 eventJournalProcessor.stop();
                             }
                         }
@@ -141,6 +137,10 @@ public final class AutoExportServiceImpl implements EventListener {
         }
     }
 
+    public boolean isRunning() {
+        return running.get();
+    }
+
     public void runOnce() {
         if (configIsValid) {
             log.info("running single autoexport cycle");
@@ -152,6 +152,7 @@ public final class AutoExportServiceImpl implements EventListener {
     }
 
     public void close() {
+        running.set(false);
         if (manager != null) {
             try {
                 manager.removeEventListener(this);
