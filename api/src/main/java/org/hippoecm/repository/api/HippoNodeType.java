@@ -411,6 +411,10 @@ public interface HippoNodeType {
 
     public static final String HIPPO_VALIDATORS = "hipposysedit:validators";
 
+    public static final String HIPPO_VISIBILITY_EXPR = "hipposysedit:visibilityexpr";
+
+    public static final String HIPPO_ENABLED_EXPR = "hipposysedit:enabledexpr";
+
     public static final String HIPPO_VALUE = "hippo:value";
 
     public static final String HIPPOSYS_VALUE = "hipposys:value";
