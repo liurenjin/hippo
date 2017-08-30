@@ -33,6 +33,8 @@
 - hipposysedit:autocreated (boolean)
 - hipposysedit:protected (boolean)
 - hipposysedit:validators (string) multiple
+- hipposysedit:visibilityexpr (string)
+- hipposysedit:enabledexpr (string)
 
 [hipposysedit:nodetype] > hippo:document orderable
 - hipposysedit:type (string)
