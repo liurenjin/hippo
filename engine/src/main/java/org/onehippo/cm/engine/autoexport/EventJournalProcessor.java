@@ -704,6 +704,8 @@ public class EventJournalProcessor {
             stopWatch.stop();
             log.info("Diff export (revision update only) in {}", stopWatch.toString());
         } else {
+            AutoExportServiceImpl.log.info("autoexport is processing changes...");
+
             final DefinitionMergeService mergeService = new DefinitionMergeService(autoExportConfig);
             final Collection<ModuleImpl> mergedModules =
                     mergeService.mergeChangesToModules(changesModule, pendingChanges, currentModel, eventProcessorSession);
@@ -770,6 +772,8 @@ public class EventJournalProcessor {
             configurationService.updateBaselineForAutoExport(reloadedModules);
             // 5) now also save the lastRevision update
             eventProcessorSession.save();
+
+            AutoExportServiceImpl.log.info("autoexport update complete");
         }
     }
 
