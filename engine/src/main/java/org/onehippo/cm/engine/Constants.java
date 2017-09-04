@@ -49,6 +49,8 @@ public final class Constants {
     public static final String HCM_MODULE_SEQUENCE = "hcm:seqnumber";
     public static final String HCM_ACTIONS = ACTIONS_YAML;
     public static final String HCM_CONTENT_PATHS_APPLIED = "hcm:contentPathsApplied";
+    public static final String HCM_CONTENT_ORDER_BEFORES_APPLIED = "hcm:contentOrderBeforesApplied";
+    public static final String HCM_CONTENT_ORDER_BEFORE_NULL_FLAG = ".:null:.";
     public static final String HCM_BUNDLES_DIGESTS = "hcm:bundlesDigest";
     public static final String HCM_PROCESSED = "hcm:processed";
     public static final String HCM_CONTENT_PATH = "hcm:contentpath";

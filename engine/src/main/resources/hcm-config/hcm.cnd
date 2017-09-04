@@ -84,6 +84,7 @@
 // Stores history of content processing
 [hcm:content]
   - hcm:contentPathsApplied (string) multiple
+  - hcm:contentOrderBeforesApplied (string) multiple
 
 [hcm:webbundles]
 - hcm:bundlesDigest (string) multiple

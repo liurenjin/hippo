@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashSet;
@@ -71,6 +72,8 @@ import static org.onehippo.cm.engine.Constants.HCM_BUNDLES_DIGESTS;
 import static org.onehippo.cm.engine.Constants.HCM_BUNDLE_NODE_PATH;
 import static org.onehippo.cm.engine.Constants.HCM_CND;
 import static org.onehippo.cm.engine.Constants.HCM_CONTENT_NODE_PATH;
+import static org.onehippo.cm.engine.Constants.HCM_CONTENT_ORDER_BEFORES_APPLIED;
+import static org.onehippo.cm.engine.Constants.HCM_CONTENT_ORDER_BEFORE_NULL_FLAG;
 import static org.onehippo.cm.engine.Constants.HCM_CONTENT_PATH;
 import static org.onehippo.cm.engine.Constants.HCM_CONTENT_PATHS_APPLIED;
 import static org.onehippo.cm.engine.Constants.HCM_DIGEST;
@@ -343,7 +346,7 @@ public class ConfigurationBaselineService {
                 final String contentNodePath = firstDef.getNode().getPath();
                 final boolean nodeAlreadyProcessed = getAppliedContentPaths(session).contains(contentNodePath);
                 if (!nodeAlreadyProcessed) {
-                    addAppliedContentPath(contentNodePath, session);
+                    addAppliedContentPath(contentNodePath, firstDef.getNode().getOrderBefore(), session);
                 }
 
             }
@@ -770,21 +773,39 @@ public class ConfigurationBaselineService {
     }
 
     /**
-     * Obtain a flat set of all content paths applied in the past
+     * Obtain a flat list of all content paths applied in the past. The order is now significant, since it is expected
+     * to match the order of applied order-before values.
      */
-    Set<String> getAppliedContentPaths(final Session session) throws RepositoryException {
-        final Set<String> appliedContentPaths = new LinkedHashSet<>();
+    List<String> getAppliedContentPaths(final Session session) throws RepositoryException {
+        return getAppliedContentValue(HCM_CONTENT_PATHS_APPLIED, session);
+    }
 
+    /**
+     * Obtain a flat list of all order-before values applied in the past. The order is now significant, since it is
+     * expected to match the order of applied path values.
+     */
+    List<String> getAppliedContentOrderBefores(final Session session) throws RepositoryException {
+        return getAppliedContentValue(HCM_CONTENT_ORDER_BEFORES_APPLIED, session);
+    }
+
+    private List<String> getAppliedContentValue(final String propName, final Session session) throws RepositoryException {
+        final List<String> appliedValues = new ArrayList<>();
         if (session.nodeExists(HCM_CONTENT_NODE_PATH)) {
             final Node hcmContentRoot = session.getNode(HCM_CONTENT_NODE_PATH);
-            if (hcmContentRoot.hasProperty(HCM_CONTENT_PATHS_APPLIED)) {
-                final Property pathsApplied = hcmContentRoot.getProperty(HCM_CONTENT_PATHS_APPLIED);
+            if (hcmContentRoot.hasProperty(propName)) {
+                final Property pathsApplied = hcmContentRoot.getProperty(propName);
                 for (final javax.jcr.Value value : pathsApplied.getValues()) {
-                    appliedContentPaths.add(value.getString());
+                    String strVal = value.getString();
+
+                    // null values are represented by a flag value, which is not a valid JCR node name or path
+                    if (strVal.equals(HCM_CONTENT_ORDER_BEFORE_NULL_FLAG)) {
+                        strVal = null;
+                    }
+                    appliedValues.add(strVal);
                 }
             }
         }
-        return appliedContentPaths;
+        return appliedValues;
     }
 
     /**
@@ -838,14 +859,42 @@ public class ConfigurationBaselineService {
      * @param path the path to add
      * @param session the session to use
      */
-    void addAppliedContentPath(final String path, final Session session) throws RepositoryException {
-        final Set<String> appliedPaths = getAppliedContentPaths(session);
+    void addAppliedContentPath(final String path, final String orderBefore, final Session session) throws RepositoryException {
+        log.debug("adding content path:{} with order-before:{}", path, orderBefore);
+        final List<String> appliedPaths = getAppliedContentPaths(session);
+        final List<String> orderBefores = getAppliedContentOrderBefores(session);
         if (!appliedPaths.contains(path)) {
+            // add the new applied path and set in JCR
             appliedPaths.add(path);
             final String[] newPaths = appliedPaths.toArray(new String[appliedPaths.size()]);
             session.getNode(HCM_CONTENT_NODE_PATH).setProperty(HCM_CONTENT_PATHS_APPLIED, newPaths);
+
+            // for 12-beta to 12-GA upgrade, fill in order-befores with null values so parallel arrays match in size
+            final int sizeDiff = appliedPaths.size() - orderBefores.size();
+            for (int i = 0; i < sizeDiff; i++) {
+                orderBefores.add(null);
+            }
+
+            // add the new order-before
+            orderBefores.add(orderBefore);
+
+            // null values are represented in JCR by a flag value, which is not a valid JCR node name or path
+            final String[] newOrderBefores = new String[orderBefores.size()];
+            for (int i = 0; i < newOrderBefores.length; i++) {
+                final String val = orderBefores.get(i);
+                newOrderBefores[i] = (val == null? HCM_CONTENT_ORDER_BEFORE_NULL_FLAG: val);
+            }
+
+            // save the order-before values with null-flags
+            log.debug("new order-befores:{}", Arrays.toString(newOrderBefores));
+            session.getNode(HCM_CONTENT_NODE_PATH).setProperty(HCM_CONTENT_ORDER_BEFORES_APPLIED, newOrderBefores);
         }
         session.save();
+
+        if (log.isDebugEnabled()) {
+            log.debug("content applied values after save\n\tpaths:{}\n\torder-before:{}",
+                    getAppliedContentPaths(session), getAppliedContentOrderBefores(session));
+        }
     }
 
     /**

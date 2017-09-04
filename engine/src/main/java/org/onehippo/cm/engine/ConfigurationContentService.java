@@ -154,7 +154,7 @@ public class ConfigurationContentService {
 
                         if (!nodeAlreadyProcessed) {
                             // will save all the session changes!
-                            configurationBaselineService.addAppliedContentPath(baseNodePath, session);
+                            configurationBaselineService.addAppliedContentPath(baseNodePath, contentNode.getOrderBefore(), session);
                         } else {
                             session.save();
                         }

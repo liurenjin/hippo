@@ -124,7 +124,7 @@ public class ConfigurationBaselineServiceTest extends BaseConfigurationConfigSer
         hcmContent.setProperty(HCM_CONTENT_PATHS_APPLIED, new String[] {"/a/b", "/c", "/a/d/e"});
         session.save();
 
-        baselineService.addAppliedContentPath("/a/a", session);
+        baselineService.addAppliedContentPath("/a/a", null, session);
         final List<String> appliedPaths = new ArrayList<>(baselineService.getAppliedContentPaths(session));
 
         assertEquals(4, appliedPaths.size());
@@ -141,7 +141,7 @@ public class ConfigurationBaselineServiceTest extends BaseConfigurationConfigSer
         hcmContent.setProperty(HCM_CONTENT_PATHS_APPLIED, new String[] {"/a/b", "/c", "/a/d/e"});
         session.save();
 
-        baselineService.addAppliedContentPath("/c", session);
+        baselineService.addAppliedContentPath("/c", null, session);
         final List<String> appliedPaths = new ArrayList<>(baselineService.getAppliedContentPaths(session));
 
         assertEquals(3, appliedPaths.size());
