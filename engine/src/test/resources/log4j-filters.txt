@@ -13,3 +13,5 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+
+Property '/AutoExportIntegrationTest/reorder-upstream-module/local-defs/3-third/jcr:primaryType' defined in 'hippo-cms-test/autoexport-integration-test-project/autoexport-integration-test-module [config: AutoExportIntegrationTest/reorder-upstream-module/local-defs.yaml]' specifies value equivalent to existing property, defined in '[hippo-cms-test/hippo-repository/hippo-repository-engine-test [config: AutoExportIntegrationTest/reorder_upstream_module.yaml]]'.
