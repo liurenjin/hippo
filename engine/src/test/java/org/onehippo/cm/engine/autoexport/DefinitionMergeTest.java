@@ -104,7 +104,7 @@ public class DefinitionMergeTest {
             this.testName = testName;
 
             Map<String, Collection<String>> modules = new HashMap<>();
-            modules.put("exportFirst", Arrays.asList("/topmost", "/exportFirstExistingRoot", "/hippo:namespaces"));
+            modules.put("exportFirst", Arrays.asList("/topmost", "/otherTopmost", "/exportFirstExistingRoot", "/hippo:namespaces"));
             modules.put("exportSecond", singletonList("/"));
             autoExportConfig = new AutoExportConfig(true, modules, null, null);
         }
