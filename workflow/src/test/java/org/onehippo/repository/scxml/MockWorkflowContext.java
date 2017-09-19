@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Hippo B.V. (http://www.onehippo.com)
+ * Copyright 2013-2017 Hippo B.V. (http://www.onehippo.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.onehippo.repository.scxml;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -31,6 +34,7 @@ public class MockWorkflowContext implements WorkflowContext {
     private String userIdentity;
     private Session session;
     private MockRepositoryMap configuration;
+    private Set<String> groupIdentities;
 
     public MockWorkflowContext(String userIdentity) throws RepositoryException {
         this(userIdentity, MockNode.root().getSession());
@@ -40,6 +44,7 @@ public class MockWorkflowContext implements WorkflowContext {
         this.userIdentity = userIdentity;
         this.session = session;
         this.configuration = new MockRepositoryMap();
+        this.groupIdentities = new HashSet<>();
     }
 
     @Override
@@ -59,6 +64,16 @@ public class MockWorkflowContext implements WorkflowContext {
     @Override
     public String getUserIdentity() {
         return userIdentity;
+    }
+
+
+    @Override
+    public Set<String> getGroupIdentities() throws RepositoryException {
+        return groupIdentities;
+    }
+
+    public void setGroupIdentities(Set<String> groupIdentities){
+        this.groupIdentities = groupIdentities;
     }
 
     @Override

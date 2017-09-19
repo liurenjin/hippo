@@ -25,6 +25,8 @@ import java.security.AccessControlException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.ItemNotFoundException;
@@ -39,6 +41,7 @@ import javax.jcr.Value;
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.HippoNodeType;
 import org.hippoecm.repository.api.HippoSession;
+import org.hippoecm.repository.api.HippoWorkspace;
 import org.hippoecm.repository.api.RepositoryMap;
 import org.hippoecm.repository.api.Workflow;
 import org.hippoecm.repository.api.WorkflowContext;
@@ -47,9 +50,12 @@ import org.hippoecm.repository.api.WorkflowException;
 import org.hippoecm.repository.api.WorkflowManager;
 import org.hippoecm.repository.ext.InternalWorkflow;
 import org.hippoecm.repository.ext.WorkflowImpl;
+import org.hippoecm.repository.security.service.GroupImpl;
 import org.hippoecm.repository.util.JcrUtils;
 import org.hippoecm.repository.util.NodeIterable;
 import org.onehippo.repository.api.annotation.WorkflowAction;
+import org.onehippo.repository.security.Group;
+import org.onehippo.repository.security.SecurityService;
 import org.onehippo.repository.util.AnnotationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,11 +171,7 @@ public class WorkflowManagerImpl implements WorkflowManager {
             for (final Value privilege : privileges.getValues()) {
                 try {
                     item.getSession().checkPermission(item.getPath(), privilege.getString());
-                } catch (AccessControlException e) {
-                    log.debug("Item matches but no permission on {} for role {}", item.getPath(), privilege.getString());
-                    hasPermission = false;
-                    break;
-                } catch (AccessDeniedException e) {
+                } catch (AccessControlException | AccessDeniedException e) {
                     log.debug("Item matches but no permission on {} for role {}", item.getPath(), privilege.getString());
                     hasPermission = false;
                     break;
@@ -332,6 +334,22 @@ public class WorkflowManagerImpl implements WorkflowManager {
         }
     }
 
+
+    Set<String> getMembershipIds(String userIdentity) {
+        try{
+            final HippoWorkspace ws = (HippoWorkspace)userSession.getWorkspace();
+            final SecurityService ss = ws.getSecurityService();
+            final Iterable<Group> groups = ss.getUser(userIdentity).getMemberships();
+            return StreamSupport
+                    .stream(groups.spliterator(),false)
+                    .map(group -> ((GroupImpl)group).getId())
+                    .collect(Collectors.toSet());
+        }
+        catch (RepositoryException e){
+            return new HashSet<>();
+        }
+    }
+
     private class WorkflowInvocationHandler implements InvocationHandler {
         private final String category;
         private final String workflowName;
@@ -417,11 +435,13 @@ public class WorkflowManagerImpl implements WorkflowManager {
         private final Session subjectSession;
         private final WorkflowDefinition workflowDefinition;
         private final Node subject;
+        private final Set<String> groupIdentities;
 
         private WorkflowContextImpl(WorkflowDefinition workflowDefinition, Session subjectSession, Node subject) {
             this.workflowDefinition = workflowDefinition;
             this.subjectSession = subjectSession;
             this.subject = subject;
+            groupIdentities = WorkflowManagerImpl.this.getMembershipIds(getUserIdentity());
         }
 
         @Override
@@ -437,6 +457,11 @@ public class WorkflowManagerImpl implements WorkflowManager {
         @Override
         public String getUserIdentity() {
             return userSession.getUserID();
+        }
+
+        @Override
+        public Set<String> getGroupIdentities() throws RepositoryException {
+            return groupIdentities;
         }
 
         @Override

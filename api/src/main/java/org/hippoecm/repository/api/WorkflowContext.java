@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 Hippo B.V. (http://www.onehippo.com)
+ *  Copyright 2008-2017 Hippo B.V. (http://www.onehippo.com)
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 package org.hippoecm.repository.api;
+
+import java.util.Set;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -42,7 +44,7 @@ public interface WorkflowContext {
      * @throws WorkflowException
      * @throws RepositoryException
      */
-    public Workflow getWorkflow(String category) throws WorkflowException, RepositoryException;
+    Workflow getWorkflow(String category) throws WorkflowException, RepositoryException;
 
     /**
      * Obtains a workflow instance for a document subject
@@ -62,25 +64,33 @@ public interface WorkflowContext {
      * @throws org.hippoecm.repository.api.WorkflowException
      * @throws javax.jcr.RepositoryException
      */
-    public Workflow getWorkflow(String category, Document document) throws WorkflowException, RepositoryException;
+    Workflow getWorkflow(String category, Document document) throws WorkflowException, RepositoryException;
 
     /**
      *
      * @return the invocation user identity
      */
-    public String getUserIdentity();
+    String getUserIdentity();
+
+
+    /**
+     *
+     * @return the group memberships of the invocation user
+     * @throws RepositoryException
+     */
+    Set<String> getGroupIdentities() throws RepositoryException;
 
     /**
      * Obtains the initial workflow invocation (user) session.
      * @return the invocation user session
      */
-    public Session getUserSession();
+    Session getUserSession();
 
     /**
      * Obtains the subject of this WorkflowContext
      * @return the subject of this WorkflowContext
      */
-    public Node getSubject();
+    Node getSubject();
 
     /**
      * Obtain the subject session used to check and load the current workflow.
@@ -98,7 +108,7 @@ public interface WorkflowContext {
      * </p>
      * @return the session to check permissions on and within the current workflow itself
      */
-    public Session getSubjectSession();
+    Session getSubjectSession();
 
     /**
      * Obain the internal workflow session which has 'root' privileges. This session is internally used by the
@@ -113,11 +123,11 @@ public interface WorkflowContext {
      * </p>
      * @return the internal workflow session with higer(st) privileges: be aware of possible dangerous side-effects when used for modifications
      */
-    public Session getInternalWorkflowSession();
+    Session getInternalWorkflowSession();
 
-    public RepositoryMap getWorkflowConfiguration();
+    RepositoryMap getWorkflowConfiguration();
 
-    public String getInteraction();
+    String getInteraction();
 
-    public String getInteractionId();
+    String getInteractionId();
 }

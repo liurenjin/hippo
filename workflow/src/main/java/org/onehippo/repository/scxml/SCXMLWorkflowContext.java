@@ -17,11 +17,10 @@
 package org.onehippo.repository.scxml;
 
 import java.io.Serializable;
-import java.security.AccessControlException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -30,6 +29,8 @@ import javax.jcr.Session;
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.WorkflowContext;
 import org.hippoecm.repository.api.WorkflowException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A SCXMLWorkflowContext serves as the main bridge between the calling {@link org.hippoecm.repository.api.Workflow}
@@ -58,6 +59,7 @@ import org.hippoecm.repository.api.WorkflowException;
 public class SCXMLWorkflowContext {
 
     public static final String SCXML_CONTEXT_KEY = "workflowContext";
+    private static final Logger log = LoggerFactory.getLogger(SCXMLWorkflowContext.class);
 
     private final String scxmlId;
     private final WorkflowContext workflowContext;
@@ -83,11 +85,7 @@ public class SCXMLWorkflowContext {
      * @return true if the current subject session has been granted all the specified privileges for the document node
      */
     public final boolean isGranted(Document document, String privileges) {
-        if (document == null) {
-            return false;
-        }
-
-        return isGranted(document.getIdentity(), privileges);
+        return document != null && isGranted(document.getIdentity(), privileges);
 
     }
 
@@ -155,6 +153,15 @@ public class SCXMLWorkflowContext {
      */
     public final String getUser() {
         return workflowContext.getUserIdentity();
+    }
+
+    public final Set<String> getGroups(){
+        try {
+            return workflowContext.getGroupIdentities();
+        } catch (RepositoryException e) {
+            log.warn("Could not get groupnames for user:{}",getUser(),e);
+        }
+        return new HashSet<>();
     }
 
     /**
