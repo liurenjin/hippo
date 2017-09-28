@@ -243,6 +243,10 @@ class MigrateToV12 {
                 modulesNode.getNode(htmlProcessor) :
                 modulesNode.addNode(htmlProcessor, NT_MODULE);
 
+        if (!htmlprocessorNode.hasProperty("hipposys:className")) {
+            htmlprocessorNode.setProperty("hipposys:className", "org.onehippo.cms7.services.htmlprocessor.HtmlProcessorServiceModule");
+        }
+
         final Node moduleConfigNode = htmlprocessorNode.hasNode(HIPPO_MODULECONFIG) ?
                 htmlprocessorNode.getNode(HIPPO_MODULECONFIG) : htmlprocessorNode.addNode(HIPPO_MODULECONFIG,
                 HIPPOSYS_MODULE_CONFIG);
