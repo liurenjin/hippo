@@ -239,7 +239,11 @@ class MigrateToV12 {
 
             if (copiedProperties.contains(property.getName())) {
                 log.info("Migrating property '{}'", property.getName());
-                movePropertyToNode(property, destinationNode);
+                if (property.getName().equals("omitComments")) {
+                    destinationNode.setProperty(property.getName(), Boolean.valueOf(property.getString()));
+                } else {
+                    movePropertyToNode(property, destinationNode);
+                }
                 saveNeeded = true;
             }
         }
